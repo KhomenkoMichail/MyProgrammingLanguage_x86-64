@@ -70,16 +70,16 @@ struct regInfo_t regsArray[] ={ { "rax", true,  specialSaved, false },
 const size_t NUM_OF_REGS = sizeof(regsArray) / sizeof(regInfo_t);
 
 struct argReg_t {
-    const cahr* name;
+    const char* name;
     const regCode_t regCode;
 };
 
-struct argReg_t argRersArray = { { "rdi", RDI },
-                                 { "rsi", RSI },
-                                 { "rdx", RDX },
-                                 { "rcx", RCX },
-                                 { "r8",  R8  },
-                                 { "r9",  R9  }, };
+struct argReg_t argRersArray[] = { { "rdi", RDI },
+                                   { "rsi", RSI },
+                                   { "rdx", RDX },
+                                   { "rcx", RCX },
+                                   { "r8",  R8  },
+                                   { "r9",  R9  }, };
 
 
 
