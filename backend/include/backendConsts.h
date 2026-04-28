@@ -4,11 +4,17 @@
     const char* STACK_POINTER_REG = "rsp";
     const char* BASE_POINTER_REG = "rbp";
 
-    const char* LEFT_OP_REG       = "rax";
-    const char* RIGHT_OP_REG      = "rbx";
+//    const char* LEFT_OP_REG       = "rax";
+//    const char* RIGHT_OP_REG      = "rbx";
 
     const char* RET_REG           = "rax";
 
+enum resultReg_t {
+    LEFT  = 0,
+    RIGHT = 1,
+};
+
+const char* OP_REG_[2] = { "rax", "rbx" };
 
 enum regCode_t {
     RAX = 0,
@@ -28,13 +34,14 @@ enum regCode_t {
     R15 = 15
 };
 
-const int NOT_REG = 16;
+const int NOT_IN_REG = 16;
+const int NOT_IN_MEMORY = 0xBADDEAD;
 
 enum regSaveDecl_t {
     callerSaved  = 1,
     calleeSaved  = 2,
     specialSaved = 3,   //for rax, rsp and rbp
-}
+};
 
 struct regInfo_t {
     const char* name;

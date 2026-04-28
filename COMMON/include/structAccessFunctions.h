@@ -19,4 +19,8 @@ size_t* nodeLine (node_t* node);
 
 char* nodeVarName (node_t* node);
 
+int* numOfTableLocalVars (nameTable_t* nametable);
+
+int* numOfFrameCaleeSavedRegs (nameTable_t* nametable);
+
 #endif

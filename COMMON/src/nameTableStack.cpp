@@ -221,13 +221,14 @@ identifierInfo* addIdToCurrentScope(tree_t* tree, char* name, idType_t idType) {
     identifierInfo* newID = addIdentifierInNameTable(currentTable, name, idType, tree->currentScopeLevel);
 
     if (idType == idVAR) {
-        currentTable->numOfLocalVars += 1;
-        newID->idInfo.varOffset = -((currentTable->numOfLocalVars + 1) * 8);
+        *varReg(newID) = NOT_IN_REG;
+        *varOffset(newID) = NOT_IN_MEMORY;
     }
 
     if (idType == idPARAM) {
         currentTable->numOfParams += 1;
-        newID->idInfo.varOffset = (currentTable->numOfParams + 1) * 8;
+        *varOffset(newID) = (currentTable->numOfParams) * 8;
+        *varReg(newID) = NOT_IN_REG;
     }
 
     return newID;

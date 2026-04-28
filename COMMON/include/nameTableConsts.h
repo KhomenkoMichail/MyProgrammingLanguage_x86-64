@@ -18,9 +18,15 @@ struct funcInfo_t {
     int haveBody;
 };
 
+struct varInfo_t {
+    int varReg;
+    int varOffset;
+}
+
+
 union idInfo_t {
     funcInfo_t funcInfo;
-    int varOffset;
+    varInfo_t varInfo;
 };
 
 struct identifierInfo {
@@ -36,6 +42,8 @@ struct identifierInfo {
 struct nameTable_t {
     identifierInfo* idArray;
     size_t size;
+
+    int numOfCaleeSavedRegs;
 
     int numOfParams;
     int numOfLocalVars;

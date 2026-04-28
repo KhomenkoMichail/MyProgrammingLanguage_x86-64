@@ -56,3 +56,22 @@ char* nodeVarName (node_t* node) {
     assert(node);
     return nodeValue(node)->id.identifierName;
 }
+
+nameTable_t* getCurNameTable (tree_t* tree) {
+    assert(tree);
+
+    size_t numOfCurNameTable = tree->nameTableStack->size - 1;
+    return (tree->nameTableStack->data)[numOfCurNameTable];
+}
+
+int* numOfTableLocalVars (nameTable_t* nametable) {
+    assert(nameTable);
+
+    return &(currentTable->numOfLocalVars);
+}
+
+int* numOfFrameCaleeSavedRegs (nameTable_t* nametable) {
+    assert(nameTable);
+
+    return &(currentTable->numOfCaleeSavedRegs);
+}

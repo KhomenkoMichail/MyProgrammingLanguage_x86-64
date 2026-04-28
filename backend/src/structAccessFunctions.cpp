@@ -31,5 +31,10 @@ bool* regWasPushed (regInfo_t* regInfoArr, regCode_t regCode) {
 
 int* varOffset (identifierInfo* varInfo) {
     assert(varInfo);
-    return &(varInfo->idInfo.varOffset);
+    return &(varInfo->idInfo.varInfo.varOffset);
+}
+
+int* varReg (identifierInfo* varInfo) {
+    assert(varInfo);
+    return &(varInfo->idInfo.varInfo.varReg);
 }
