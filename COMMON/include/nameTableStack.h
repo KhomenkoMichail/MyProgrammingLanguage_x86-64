@@ -19,7 +19,6 @@
 
     void nameTableDtor (nameTable_t* nameTable);
 
-    //identifierInfo* addIdentifierInNameTable (nameTable_t* nameTable, const char* name, idType_t idType, size_t scopeLevel);
     identifierInfo* addIdentifierInNameTable (nameTable_t* nameTable, char* name, idType_t idType, size_t scopeLevel);
 
     identifierInfo* findIdInTable (const nameTable_t* nameTable, const char* idName);
@@ -32,7 +31,6 @@
 
     void exitScope(tree_t* tree);
 
-    //identifierInfo* addIdToCurrentScope(tree_t* tree, const char* name, idType_t idType);
     identifierInfo* addIdToCurrentScope(tree_t* tree, char* name, idType_t idType);
 
     identifierInfo* findIdInAllScopes(tree_t* tree, const char* idName);

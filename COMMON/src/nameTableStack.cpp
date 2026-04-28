@@ -12,9 +12,6 @@
 #include "../include/nameTableStack.h"
 #include "../include/helpingFunctions.h"
 
-const stackElement_t POISON = NULL;
-const int MAX_CAPACITY = 100000000;
-
 int stackCtor (stack_t* stack, ssize_t capacity, const char* nameOfStack, struct info creationInfo) {
     assert(stack);
     assert(nameOfStack);

@@ -12,6 +12,7 @@ struct operatorInfo operatorsArray[] ={ { "bacca",     opADD,         sizeof("ba
                                         { "lanna",     opOUT,         sizeof("lanna") - 1,      "out",   "#ff880aff" },
                                         { "ruow",      opRET,         sizeof("ruow") - 1,       "ret",   "#00ddffff" },
                                         { "mu",        opHLT,         sizeof("mu") - 1,         "hlt",   "#f42424ff" },
+                                        { "agaahaa",   opSQRT,        sizeof("agaahaa") - 1,    "sqrt",  "#f668e5ff" },
                                         { ",",         opCOMMA,       sizeof(",") - 1,          ",",     "#eceef0ff" },
                                         { "chal",      opUNITED_ON,   sizeof("chal") - 1,       "{",     "#eceef0ff" },
                                         { "ur-oh",     opUNITED_OFF,  sizeof("ur-oh") - 1,      "}",     "#eceef0ff" },

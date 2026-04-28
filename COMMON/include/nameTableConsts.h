@@ -4,6 +4,9 @@
 const size_t INITIAL_STACK_CAPACITY = 10;
 const size_t INITIAL_TABLE_CAPACITY = 20;
 
+const stackElement_t POISON = NULL;
+const int MAX_CAPACITY = 100000000;
+
 enum idType_t {
     idVAR = 1,
     idFUNC = 2,
@@ -20,7 +23,7 @@ union idInfo_t {
 };
 
 struct identifierInfo {
-    char* identifierName; //NOTE const
+    char* identifierName;
     unsigned long long identifierHash;
 
     idType_t idType;

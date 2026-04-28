@@ -99,6 +99,8 @@ int solveNode (tree_t* tree, node_t* node) {
                     return (leftValue - rightValue);
                 case opMUL:
                     return (leftValue * rightValue);
+                case opSQRT:
+                    return (int)sqrt(leftValue);
                 case opDIV:
                     if (rightValue != 0)
                         return (leftValue / rightValue);

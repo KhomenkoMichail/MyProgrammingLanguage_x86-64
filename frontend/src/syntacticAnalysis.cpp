@@ -201,6 +201,7 @@ node_t* getOperator (tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
             case opSEPARATOR:
             case opBRACK_ON:
             case opBRACK_OFF:
+            case opSQRT:
             case opCOMMA:
             case opASSIGN:
             case opUNITED_OFF:
@@ -547,6 +548,9 @@ node_t* getBracketExpressionNodes (tree_t* tree, node_t** nodeArr, size_t* curNo
         return newNode;
     }
 
+    else if (NODE_IS_OP_(opSQRT))
+        return getSQRTnode(tree, nodeArr, curNodeNum);
+
     else if (NODE_IS_NUM) {
         node_t* newNode = nodeArr[*curNodeNum];
         (*curNodeNum)++;
@@ -563,6 +567,28 @@ node_t* getBracketExpressionNodes (tree_t* tree, node_t** nodeArr, size_t* curNo
     else
         return syntaxError(tree, nodeArr, curNodeNum, __func__);
 
+}
+
+node_t* getSQRTnode(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
+    assert(tree);
+    assert(nodeArr);
+    assert(curNodeNum);
+
+    if (tree->errorCode)
+        return NULL;
+
+    node_t* sqrtNode = nodeArr[*curNodeNum];
+    (*curNodeNum)++;
+
+    CHECK_THE_NODE_IS_(opBRACK_ON);
+
+    *nodeLeft(sqrtNode) = getADDandSUBnodes(tree, nodeArr, curNodeNum);
+    if (!(*nodeLeft(sqrtNode)))
+        return NULL;
+
+    CHECK_THE_NODE_IS_(opBRACK_OFF);
+
+    return sqrtNode;
 }
 
 node_t* getVarIDNode(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {

@@ -29,6 +29,8 @@ node_t* getMULandDIVnodes (tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
 node_t* getBracketExpressionNodes (tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
+node_t* getSQRTnode(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
+
 node_t* getVarIDNode (tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
 node_t* getOpInit(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);

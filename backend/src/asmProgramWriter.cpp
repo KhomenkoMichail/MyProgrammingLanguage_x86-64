@@ -299,11 +299,6 @@ int rewriteOpCompareToAsmCode (tree_t* tree, node_t* node, FILE* asmFile, source
 
     int errorCode = 0;
 
-    static int compareCounter = 0;
-    compareCounter++;
-
-    int curCompareNum = compareCounter;
-
     if (*nodeRight(node)) {
         errorCode = rewriteNodeToAsmCode(tree, *nodeRight(node), asmFile, srcFile);
         fprintf(asmFile, "mov %s, %s\n", RIGHT_OP_REG, LEFT_OP_REG);
@@ -323,24 +318,19 @@ int rewriteOpCompareToAsmCode (tree_t* tree, node_t* node, FILE* asmFile, source
     fprintf(asmFile, "cmp %s, %s\n", LEFT_OP_REG, RIGHT_OP_REG);
 
     if (nodeValue(node)->opCode == opEQUAL)
-        fprintf(asmFile, "JNE ");
+        fprintf(asmFile, "sete sil\n");
     if (nodeValue(node)->opCode == opNOT_EQUAL)
-        fprintf(asmFile, "JE ");
+        fprintf(asmFile, "setne sil\n");
     if (nodeValue(node)->opCode == opBELOW)
-        fprintf(asmFile, "JAE ");
+        fprintf(asmFile, "setl sil\n");
     if (nodeValue(node)->opCode == opABOVE)
-        fprintf(asmFile, "JBE ");
+        fprintf(asmFile, "setg sil\n");
     if (nodeValue(node)->opCode == opE_BELOW)
-        fprintf(asmFile, "JA ");
+        fprintf(asmFile, "setle sil\n");
     if (nodeValue(node)->opCode == opE_ABOVE)
-        fprintf(asmFile, "JB ");
+        fprintf(asmFile, "setge sil\n");
 
-    fprintf(asmFile, ":endCompare%d\n", curCompareNum);
-    fprintf(asmFile, "PUSH 1\n");
-    fprintf(asmFile, "POPREG %s\n", COMPARE_VALUE_REG);
-    fprintf(asmFile, ":endCompare%d\n", curCompareNum);
-
-    fprintf(asmFile, "PUSHREG %s\n", COMPARE_VALUE_REG);
+    fprintf(asmFile, "movzx %s, sil\n", LEFT_OP_REG);
 
     return errorCode;
 }
@@ -365,6 +355,7 @@ int rewriteIdNodeToAsmCode(tree_t* tree, node_t* node, FILE* asmFile, sourceFile
     else
         return rewriteFuncCallNodeToAsmCode (tree, node, asmFile, srcFile);
 }
+//------------------------------------------------------------------------------
 
 int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile) {
     assert(tree);
@@ -383,11 +374,8 @@ int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile) {
 
     identifierInfo* searchedVarId = findIdInTable(curNameTable, varName);
 
-    if(!searchedVarId) {
+    if(!searchedVarId)
         searchedVarId = addIdToCurrentScope(tree, varName, idVAR);
-        //searchedVarId->idInfo.varOffset = tree->numOfVars;
-        //tree->numOfVars++;
-    }
 
     fprintf(asmFile, "PUSHREG %s\n", FRAME_POINTER_REG);
     fprintf(asmFile, "PUSH %lld\n", searchedVarId->idInfo.varOffset);

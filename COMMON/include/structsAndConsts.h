@@ -53,6 +53,7 @@ enum operatorCode_t {
     opOUT = 11,
     opRET = 12,
     opHLT = 13,
+    opSQRT = 14,
     opCOMMA = 15,
     opUNITED_ON = 16,
     opUNITED_OFF = 17,
