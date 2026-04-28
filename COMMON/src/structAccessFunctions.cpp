@@ -51,3 +51,8 @@ size_t* nodeLine (node_t* node) {
 
     return &(node->numOfLine);
 }
+
+char* nodeVarName (node_t* node) {
+    assert(node);
+    return nodeValue(node)->id.identifierName;
+}

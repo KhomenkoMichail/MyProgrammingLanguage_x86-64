@@ -10,6 +10,7 @@ const int MAX_CAPACITY = 100000000;
 enum idType_t {
     idVAR = 1,
     idFUNC = 2,
+    idPARAM = 3,
 };
 
 struct funcInfo_t {
@@ -19,7 +20,7 @@ struct funcInfo_t {
 
 union idInfo_t {
     funcInfo_t funcInfo;
-    size_t varOffset;
+    int varOffset;
 };
 
 struct identifierInfo {
@@ -35,7 +36,9 @@ struct identifierInfo {
 struct nameTable_t {
     identifierInfo* idArray;
     size_t size;
-    size_t numOfVars;
+
+    int numOfParams;
+    int numOfLocalVars;
 
     size_t capacity;
 };

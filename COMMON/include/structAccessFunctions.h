@@ -17,4 +17,6 @@ size_t* treeSize (tree_t* treePtr);
 
 size_t* nodeLine (node_t* node);
 
+char* nodeVarName (node_t* node);
+
 #endif

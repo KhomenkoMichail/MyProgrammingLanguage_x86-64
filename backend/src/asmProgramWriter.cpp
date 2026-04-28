@@ -11,6 +11,7 @@
 #include "../include/sourceFileParser.h"
 #include "../include/asmProgramWriter.h"
 #include "../include/backendConsts.h"
+#include "../include/structAccessFunctions.h"
 
 int rewriteAstToAsmCode (tree_t* tree, const char* nameOfAsmFile, const char* nameOfSourceFile) {
     assert(tree);
@@ -28,7 +29,6 @@ int rewriteAstToAsmCode (tree_t* tree, const char* nameOfAsmFile, const char* na
     getStructSourceFile(srcFile, nameOfSourceFile);
     srcFile->fileName = nameOfSourceFile;
 
-    initStackRegs(asmFile);
     initNameTables(tree);
 
     if (rewriteNodeToAsmCode (tree, *treeRoot(tree), asmFile, srcFile))
@@ -44,19 +44,6 @@ int rewriteAstToAsmCode (tree_t* tree, const char* nameOfAsmFile, const char* na
     }
 
     return 0;
-}
-
-void initStackRegs (FILE* asmFile) {
-    assert(asmFile);
-
-    fprintf(asmFile, "PUSH %d\n", PROCESSOR_MEMORY - 1);
-    fprintf(asmFile, "POPREG %s\n", FRAME_POINTER_REG);
-
-    fprintf(asmFile, "PUSHREG %s\n", FRAME_POINTER_REG);
-    fprintf(asmFile, "POPM [%s]\n", FRAME_POINTER_REG);
-
-    fprintf(asmFile, "PUSH %d\n", PROCESSOR_MEMORY - 1);
-    fprintf(asmFile, "POPREG %s\n", STACK_POINTER_REG);
 }
 
 int rewriteNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile, sourceFile* srcFile) {
@@ -284,8 +271,8 @@ int rewriteOpRetToAsmCode (tree_t* tree, node_t* node, FILE* asmFile, sourceFile
         fprintf(asmFile, "mov %s, %s\n", RET_REG, LEFT_OP_REG);
     }
 
-    fprintf(asmFile, "mov %s, %s\n", STACK_POINTER_REG, FRAME_POINTER_REG);
-    fprintf(asmFile, "pop %s\n", FRAME_POINTER_REG);
+    fprintf(asmFile, "mov %s, %s\n", STACK_POINTER_REG, BASE_POINTER_REG);
+    fprintf(asmFile, "pop %s\n", BASE_POINTER_REG);
     fprintf(asmFile, "ret\n");
 
     return errorCode;
@@ -355,7 +342,6 @@ int rewriteIdNodeToAsmCode(tree_t* tree, node_t* node, FILE* asmFile, sourceFile
     else
         return rewriteFuncCallNodeToAsmCode (tree, node, asmFile, srcFile);
 }
-//------------------------------------------------------------------------------
 
 int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile) {
     assert(tree);
@@ -377,7 +363,7 @@ int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile) {
     if(!searchedVarId)
         searchedVarId = addIdToCurrentScope(tree, varName, idVAR);
 
-    fprintf(asmFile, "PUSHREG %s\n", FRAME_POINTER_REG);
+    fprintf(asmFile, "PUSHREG %s\n", BASE_POINTER_REG);
     fprintf(asmFile, "PUSH %lld\n", searchedVarId->idInfo.varOffset);
     fprintf(asmFile, "SUB\n");
 
@@ -385,6 +371,8 @@ int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile) {
 
     return 0;
 }
+
+
 
 int rewriteFuncBodyToAsmCode(tree_t* tree, node_t* node, FILE* asmFile, sourceFile* srcFile) {
     assert(tree);
@@ -394,7 +382,9 @@ int rewriteFuncBodyToAsmCode(tree_t* tree, node_t* node, FILE* asmFile, sourceFi
 
     int errorCode = 0;
 
-    fprintf(asmFile, ":%s\n", nodeValue(node)->id.identifierName);
+    fprintf(asmFile, "%s:\n", nodeValue(node)->id.identifierName);
+    fprintf(asmFile, "push %s\n", BASE_POINTER_REG);
+    fprintf(asmFile, "mov %s, %s\n", BASE_POINTER_REG, STACK_POINTER_REG);
 
     enterNewScope(tree);
 
@@ -413,7 +403,7 @@ int rewriteFuncBodyToAsmCode(tree_t* tree, node_t* node, FILE* asmFile, sourceFi
     return errorCode;
 }
 
-int fprintfGettingParamsToAsmCode (tree_t* tree, node_t* node, FILE* asmFile) {
+int fprintfGettingParamsToAsmCode (tree_t* tree, node_t* node, int* paramNum,FILE* asmFile) {
     assert(tree);
     assert(node);
     assert(asmFile);
@@ -421,18 +411,11 @@ int fprintfGettingParamsToAsmCode (tree_t* tree, node_t* node, FILE* asmFile) {
     int errorCode = 0;
 
     if(*nodeLeft(node) && *nodeRight(node)) {
-        errorCode = fprintfGettingParamsToAsmCode (tree, *nodeRight(node), asmFile);
         errorCode = fprintfGettingParamsToAsmCode (tree, *nodeLeft(node), asmFile);
+        errorCode = fprintfGettingParamsToAsmCode (tree, *nodeRight(node), asmFile);
     }
-    else {
-        errorCode = writeVarAddressToAsm (tree, node, asmFile);
-
-        fprintf(asmFile, "PUSHREG %s\n", STACK_POINTER_REG);
-        fprintf(asmFile, "PUSH 1\n");
-        fprintf(asmFile, "SUB\n");
-        fprintf(asmFile, "POPREG %s\n", STACK_POINTER_REG);
-        fprintf(asmFile, "POPM [%s]\n", VAR_ADDR_REG);
-    }
+    else
+        paramVarId = addIdToCurrentScope(tree, nodeVarName(node), idPARAM);
 
     return errorCode;
 }
@@ -444,24 +427,57 @@ int rewriteFuncCallNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile, sou
     assert(asmFile);
 
     int errorCode = 0;
+    int numOfFuncParams = 0;
+
+    pushCallerSavedRegs();
 
     if (*nodeLeft(node))
-        errorCode = rewriteNodeToAsmCode (tree, *nodeLeft(node), asmFile, srcFile);
+        numOfFuncParams = fprintfPassingParams (tree_t* tree, node_t* node, FILE* asmFile, sourceFile* srcFile);
 
-    fprintf(asmFile, "PUSHREG %s\n", STACK_POINTER_REG);
-    fprintf(asmFile, "PUSH 1\n");
-    fprintf(asmFile, "SUB\n");
-    fprintf(asmFile, "POPREG %s\n", STACK_POINTER_REG);
+    fprintf(asmFile, "call :%s\n", nodeValue(node)->id.identifierName);
 
-    fprintf(asmFile, "PUSHREG %s\n", FRAME_POINTER_REG);
-    fprintf(asmFile, "POPM [%s]\n", STACK_POINTER_REG);
+    if (*nodeLeft(node))
+        fprintf(asmFile, "add %s, %d", STACK_POINTER_REG, numOfFuncParams * 8);
 
-    fprintf(asmFile, "PUSHREG %s\n", STACK_POINTER_REG);
-    fprintf(asmFile, "POPREG %s\n", FRAME_POINTER_REG);
-
-    fprintf(asmFile, "CALL :%s\n", nodeValue(node)->id.identifierName);
+    popCallerSavedRegs();
 
     return errorCode;
+}
+
+int fprintfPassingParams (tree_t* tree, node_t* node, FILE* asmFile, sourceFile* srcFile) {
+
+    static int curParamsCounter = 0;
+    int oldParamsCounter = paramsCounter;
+
+    if(*nodeLeft(node) && *nodeRight(node)) {
+        fprintfPassingParams (tree, *nodeRight(node), asmFile);
+        fprintfPassingParams (tree, *nodeLeft(node), asmFile);
+    }
+    else {
+        rewriteNodeToAsmCode (tree, *nodeLeft(node), asmFile, srcFile);
+        fprintf(asmFile, "push %s\n", LEFT_OP_REG);
+        curParamsCounter++;
+    }
+
+    return curParamsCounter - oldParamsCounter;
+}
+
+void pushCallerSavedRegs (void) {
+    for (size_t curReg = 0; curReg < NUM_OF_REGS; curReg++)
+        if (*regIsUsed(regsArray, curReg) && regSaveDecl(regsArray, curReg) == callerSaved) {
+            fprintf(asmFile, "push %s\n", regName(regsArray, curReg));
+            *regIsUsed(regsArray, curReg) = false;
+            *regWasPushed(regsArray, curReg) = true;
+        }
+}
+
+void popCallerSavedRegs (void) {
+    for (size_t curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--)
+        if (*regWasPushed(regsArray, curReg)) {
+            fprintf(asmFile, "pop %s\n", regName(regsArray, curReg));
+            *regIsUsed(regsArray, curReg) = true;
+            *regWasPushed(regsArray, curReg) = false;
+        }
 }
 
 int rewriteVarNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile) {

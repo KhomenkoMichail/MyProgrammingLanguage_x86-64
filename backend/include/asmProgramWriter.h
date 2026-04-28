@@ -47,6 +47,4 @@ int fprintfGettingParamsToAsmCode (tree_t* tree, node_t* node, FILE* asmFile);
 int rewriteFuncCallNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
                                   sourceFile* srcFile);
 
-void initStackRegs (FILE* asmFile);
-
 #endif
