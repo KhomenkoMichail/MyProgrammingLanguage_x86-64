@@ -36,7 +36,6 @@ build-r: $(reverse_all) $(reverse_cpp) $(common_all)
 	@echo -------------------------------------------------------------------------
 	g++ $(reverse_cpp) $(common_cpp) $(flags) -o reverse-frontend/build/reverse.exe
 
-
 run-f:
 	./frontend/build/frontend.exe
 

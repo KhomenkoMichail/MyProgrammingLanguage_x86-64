@@ -455,7 +455,6 @@ node_t* getExpressionNode(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     if (!newExpressionNode)
         return NULL;
 
-//NOTE
     if (NODE_IS_COMPARE) {
         node_t* leftOperand = newExpressionNode;
 
@@ -484,7 +483,7 @@ node_t* getADDandSUBnodes (tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     node_t* nodeExpression = getMULandDIVnodes(tree, nodeArr, curNodeNum);
     if (!nodeExpression)
         return NULL;
-//NOTE
+
     while ((NODE_IS_OP_(opADD)) || (NODE_IS_OP_(opSUB))) {
         node_t* leftOperand = nodeExpression;
 
