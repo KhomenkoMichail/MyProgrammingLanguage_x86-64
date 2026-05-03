@@ -60,19 +60,19 @@ FILE** cntxtAsmFile (backendContext_t* cntxt) {
 }
 
 
-tree_t* cntxtTree (backendContext_t* cntxt) {
+tree_t** cntxtTree (backendContext_t* cntxt) {
     assert(cntxt);
-    return cntxt->tree;
+    return &(cntxt->tree);
 }
 
-vector_t* cntxtProgramBuf (backendContext_t* cntxt) {
+intVector_t* cntxtProgramBuf (backendContext_t* cntxt) {
     assert(cntxt);
-    return cntxt->programBuf;
+    return &(cntxt->programBuf);
 }
 
-regInfo_t* cntxtRegsArr (backendContext_t* cntxt) {
+regInfo_t** cntxtRegsArr (backendContext_t* cntxt) {
     assert(cntxt);
-    return cntxt->regsArr;
+    return &(cntxt->regsArr);
 }
 
 int* cntxtIfCounter (backendContext_t* cntxt) {
@@ -94,3 +94,66 @@ size_t* cntxtCurFuncStackVarsCntr (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->curFuncStackVarsCntr);
 }
+
+dump** cntxtTreeDump (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->treeDump);
+}
+
+char** cntxtAstCopyBuffer (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->astCopyBuffer);
+}
+
+int** intVectorBuf (intVector_t* intVec) {
+    assert(intVec);
+    return &(intVec->buf);
+}
+
+size_t* intVectorSize (intVector_t* intVec) {
+    assert(intVec);
+    return &(intVec->curSize);
+}
+
+size_t* intVectorCapacity (intVector_t* intVec) {
+    assert(intVec);
+    return &(intVec->capacity);
+}
+
+size_t* labelVectorSize (labelVector_t* labelVec) {
+    assert(labelVec);
+    return &(labelVec->curSize);
+}
+
+size_t* labelVectorCapacity (labelVector_t* labelVec) {
+    assert(labelVec);
+    return &(labelVec->capacity);
+}
+
+label_t** lableVectorArr (labelVector_t* labelVec) {
+    assert(labelVec);
+    return &(labelVec->labelArr);
+}
+
+const char** labelName (label_t* label) {
+    assert(label);
+    return &(label->name);
+}
+
+size_t* labelAddress (label_t* label) {
+    assert(label);
+    return &(label->address);
+}
+
+unsigned long long* labelHash (label_t* label) {
+    assert(label);
+    return &(label->hash);
+}
+
+intVector_t* labelPatchOffsets (label_t* label) {
+    assert(label);
+    return &(label->patchOffsets);
+}
+
+
+

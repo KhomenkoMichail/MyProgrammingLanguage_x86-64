@@ -1,10 +1,27 @@
 #ifndef BACKEND_CONSTS_H
 #define BACKEND_CONSTS_H
 
-    const char* STACK_POINTER_REG = "rsp";
-    const char* BASE_POINTER_REG = "rbp";
+#define SET_ERR_AND_RETURN(cntxt, errCode, ...) do { \
+    if (cntxt) { \
+        (cntxt)->errCode = code; \
+        snprintf((cntxt)->errMsg, sizeof((cntxt)->errMsg), __VA_ARGS__); \
+    } \
+    return errCode; \
+} while(0)
 
-    const char* RET_REG           = "rax";
+enum backendErr_t {
+    BACKEND_SUCCESS = 0;
+    BACKEND_ERR_TREE_DUMP_CALLOC = 1;
+    BACKEND_ERR_TREE_CALLOC = 2,
+    BACKEND_ERR_CREATE_TREE = 3,
+    BACKEND_ERR_REGS_ARR_CALLOC = 4,
+
+}
+
+const char* STACK_POINTER_REG = "rsp";
+const char* BASE_POINTER_REG = "rbp";
+
+const char* RET_REG           = "rax";
 
 enum resultReg_t {
     LEFT  = 0,
@@ -48,24 +65,24 @@ struct regInfo_t {
     bool wasPushed;
 };
 
-regInfo_t regsArray[] = { { "rax", true,  specialSaved, false },
-                          { "rbx", true,  calleeSaved,   false },
-                          { "rcx", false, callerSaved,  false },
-                          { "rdx", false, callerSaved,  false },
-                          { "rsp", true,  specialSaved, false },
-                          { "rbp", true,  specialSaved, false },
-                          { "rsi", false, callerSaved,  false },
-                          { "rdi", false, callerSaved,  false },
-                          { "r8",  false, callerSaved,  false },
-                          { "r9",  false, callerSaved,  false },
-                          { "r10", false, callerSaved,  false },
-                          { "r11", false, callerSaved,  false },
-                          { "r12", false, calleeSaved,  false },
-                          { "r13", false, calleeSaved,  false },
-                          { "r14", false, calleeSaved,  false },
-                          { "r15", false, calleeSaved,  false }, };
+const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved, false },
+                                      { "rbx", true,  calleeSaved,  false },
+                                      { "rcx", false, callerSaved,  false },
+                                      { "rdx", false, callerSaved,  false },
+                                      { "rsp", true,  specialSaved, false },
+                                      { "rbp", true,  specialSaved, false },
+                                      { "rsi", false, callerSaved,  false },
+                                      { "rdi", false, callerSaved,  false },
+                                      { "r8",  false, callerSaved,  false },
+                                      { "r9",  false, callerSaved,  false },
+                                      { "r10", false, callerSaved,  false },
+                                      { "r11", false, callerSaved,  false },
+                                      { "r12", false, calleeSaved,  false },
+                                      { "r13", false, calleeSaved,  false },
+                                      { "r14", false, calleeSaved,  false },
+                                      { "r15", false, calleeSaved,  false }, };
 
-const size_t NUM_OF_REGS = sizeof(regsArray) / sizeof(regInfo_t);
+const size_t NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
 
 enum opRegRegCode_t {
     ADD = 0x01,
@@ -98,25 +115,30 @@ struct intVector_t {
 };
 
 struct label_t {
-    const char* label;
-    size_t labelAddress;
+    const char* name;
+    size_t address;
 
-    unsigned long long stringLabelHash;
+    unsigned long hash;
     intVector_t* patchOffsets;
 };
 
 labelVector_t {
-    label_t*
+    label_t* labelArr;
     size_t curSize;
     size_t capacity;
 };
+
+const int BACKEND_ERR_MSG_LEN = 256;
 
 struct backendContext_t {
     file_t srcFile;
     file_t asmFile;
 
     tree_t* tree;
-    vector_t* programBuf;
+    dump* treeDump;
+    char* astCopyBuffer;
+
+    intVector_t programBuf;
 
     regInfo_t* regsArr;
 
@@ -126,7 +148,10 @@ struct backendContext_t {
     size_t curFuncRSPsubOffset;
     size_t curFuncStackVarsCntr;
 
-    vector_t* labelsArr;
+    labelVector_t labelsArr;
+
+    backendError_t errCode;
+    char errMsg[BACKEND_ERR_MSG_LEN];
 }
 
 #endif

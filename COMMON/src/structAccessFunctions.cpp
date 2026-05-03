@@ -75,3 +75,13 @@ int* numOfFrameCaleeSavedRegs (nameTable_t* nametable) {
 
     return &(currentTable->numOfCaleeSavedRegs);
 }
+
+const char** dumpNameOfDumpFile (dump*) {
+    assert(dump);
+    return &(dump->nameOfDumpFile);
+}
+
+const char** dumpNameOfGraphFile (dump*) {
+    assert(dump);
+    return &(dump->nameOfGraphFile);
+}
