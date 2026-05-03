@@ -5,29 +5,10 @@
 #include "../../COMMON/include/structsAndConsts.h"
 #include "../include/backendConsts.h"
 #include "../include/backendCntxtFuncs.h"
+#include "../include/sourceFileParser.h"
 
 
 
-struct backendContext_t {
-    file_t srcFile;
-    file_t asmFile;
-
-    tree_t* tree;
-    dump* treeDump;
-    char* astCopyBuffer;
-
-    intVector_t programBuf;
-
-    regInfo_t* regsArr;
-
-    int ifCounter;
-    int whileCounter;
-
-    size_t curFuncRSPsubOffset;
-    size_t curFuncStackVarsCntr;
-
-    labelVector_t* labelsArr;
-}
 
 int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* asmFileName, const char* srcFileName) {
     assert(cntxt);
@@ -35,8 +16,16 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
     assert(asmFileName);
     assert(srcFileName);
 
-    *cntxtSrcFileName(cntxt) = srcFileName;
     *cntxtAsmFileName(cntxt) = asmFileName;
+
+    *cntxtSrcFile(cntxt) = (sourceFile*)calloc(1, sizeof(sourceFile));
+    if (!*cntxtSrcFile(cntxt)) {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_SRC_FILE_STRUCT_CALLOC,
+                        "Error src file struct calloc in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+    getStructSourceFile(*cntxtSrcFile(cntxt), srcFileName);
+
 
     *cntxtTreeDump(cntxt) = (dump*)calloc(1, sizeof(dump));
     if(!(*cntxtTreeDump(cntxt))) {
@@ -44,9 +33,9 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
                         "Error tree dump calloc in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-
     *dumpNameOfDumpFile(*cntxtTreeDump(cntxt)) = "DUMPS/backendTreeDump.html";
     *dumpNameOfGraphFile(*cntxtTreeDump(cntxt)) = "DUMPS/backGraph.txt";
+
 
     *cntxtTree(cntxt) = (tree_t*)calloc(1, sizeof(tree_t));
     if(!(*cntxtTree(cntxt))) {
@@ -54,6 +43,8 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
                         "Error tree calloc in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
+    initNameTables(*cntxtTree(cntxt));
+
 
     *cntxtAstCopyBuffer(cntxt) = readFileAndCreateTree(*cntxtTree(cntxt),
                                                        *cntxtTreeDump(cntxt), astFile);
@@ -63,13 +54,98 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
                         __func__, __FILE__, __LINE__);
     }
 
+
+    *cntxtProgramBuf(cntxt) = (int*)calloc(INIT_PROGRAM_BUF_CAPASITY, sizeof(int));
+    if(!(*cntxtProgramBuf(cntxt))) {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_PROGRAM_BUF_CALLOC,
+                        "Error program buf calloc in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+    *cntxtProgramBufSize(cntxt) = 0;
+    *cntxtProgramBufCapacity(cntxt) = INIT_PROGRAM_BUF_CAPASITY;
+
+
     *cntxtRegsArr(cntxt) = (regInfo_t*)calloc(1, sizeof(INIT_REGS_ARRAY));
     if(!(*cntxtRegsArr(cntxt))) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_REGS_ARR_CALLOC,
                         "Error regs array calloc in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-
     memcpy(*cntxtRegsArr(cntxt), INIT_REGS_ARRAY, sizeof(INIT_REGS_ARRAY));
 
+
+    if (!labelVectorCtor(*cntxtLabelVector(cntxt), INIT_LABELS_ARR_CAPACITY)) {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_LABELS_ARR_CTOR,
+                        "Error labels array ctor in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+
+    return BACKEND_SUCCESS;
+}
+
+labelVector_t* labelVectorCtor (labelVector_t* newLabelVector, size_t initCapacity) {
+    assert(newLabelVector);
+
+    *labelVectorSize(newLabelVector) = 0;
+    *labelVectorCapacity(newLabelVector) = initCapacity;
+
+    *lableVectorArr(newLabelVector) = (label_t*)calloc(initCapacity, sizeof(label_t));
+    if (!(*lableVectorArr(newLabelVector)))
+        return NULL;
+
+    for (size_t numOfLabel = 0; numOfLabel < initCapacity; numOfLabel++) {
+        label_t* curLable = getLable(newLabelVector, numOfLabel);
+
+        *intVectorCapacity(*(labelPatchOffsets(curLable))) = INIT_LABEL_PATCH_OFFSETS_CAPACITY;
+        *intVectorBuf(*(labelPatchOffsets(curLable))) = (int*)calloc(INIT_LABEL_PATCH_OFFSETS_CAPACITY, sizeof(int));
+
+        if (!(*intVectorBuf(*labelPatchOffsets(curLable))))
+            return NULL;
+    }
+
+    return (newLabelVector);
+}
+
+void labelVectorDtor (labelVector_t* labelVector) {
+    assert(labelVector);
+
+    for (size_t numOfLabel = 0; numOfLabel < *labelVectorCapacity(labelVector); numOfLabel++) {
+        label_t* curLable = getLable(newLabelVector, numOfLabel);
+
+        if (*labelName(curLabel))
+            free(*labelName(curLabel));
+
+        if (*intVectorBuf(*labelPatchOffsets(curLable)))
+            free(*intVectorBuf(*labelPatchOffsets(curLable)));
+    }
+
+    free(*lableVectorArr(labelVector));
+}
+
+void backendCntxtDtor (backendContext_t* cntxt) {
+    assert(cntxt);
+
+    if (*cntxtTree(cntxt)) {
+        destroyNameTables(*cntxtTree(cntxt));
+        deleteTree(*cntxtTree(cntxt));
+        free(*cntxtTree(cntxt));
+    }
+
+    if (*cntxtSrcFile(cntxt))
+        freeStructSourceFile(*cntxtSrcFile(cntxt));
+
+    if (*cntxtTreeDump(cntxt))
+        free(*cntxtTreeDump(cntxt));
+
+    if (*cntxtAstCopyBuffer(cntxt))
+        free(*cntxtAstCopyBuffer(cntxt));
+
+    if (*cntxtProgramBuf(cntxt))
+        free(*cntxtProgramBuf(cntxt));
+
+    if (*cntxtRegsArr(cntxt))
+        free(*cntxtRegsArr(cntxt));
+
+    if (*cntxtLabelsArr(cntxt))
+        labelVectorDtor(*cntxtLabelsArr(cntxt));
 }

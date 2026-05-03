@@ -11,7 +11,7 @@
 
 #include "../include/sourceFileParser.h"
 
-char* copyFileContent (sourceFile* srcFile, const char* fileName) {
+char* copyFileContent (sourceFile_t* srcFile, const char* fileName) {
     assert(fileName);
     assert(srcFile);
 
@@ -44,7 +44,7 @@ char* copyFileContent (sourceFile* srcFile, const char* fileName) {
     return fileCopyBuffer;
 }
 
-void getStructSourceFile (sourceFile* srcFile, const char* fileName) {
+void getStructSourceFile (sourceFile_t* srcFile, const char* fileName) {
     assert(srcFile);
     assert(fileName);
 
@@ -57,10 +57,12 @@ void getStructSourceFile (sourceFile* srcFile, const char* fileName) {
     srcFile->text               = buffer;
     srcFile->numberOfStrings    = numberOfStrings;
 
+    srcFile->fileName = fileName;
+
     getArrOfStringStructs(srcFile);
 }
 
-void getArrOfStringStructs (sourceFile* srcFile) {
+void getArrOfStringStructs (sourceFile_t* srcFile) {
     assert(srcFile);
 
     srcFile->arrOfStringStructs = (line*)calloc(srcFile->numberOfStrings, sizeof(line));
@@ -81,14 +83,14 @@ void getArrOfStringStructs (sourceFile* srcFile) {
     replaceSymbols (srcFile->text, '\n', '\0');
 }
 
-void getLengthOfStrings (sourceFile* srcFile) {
+void getLengthOfStrings (sourceFile_t* srcFile) {
     assert(srcFile);
 
     for(size_t line = 0; line < srcFile->numberOfStrings - 1; line++)
         (srcFile->arrOfStringStructs[line]).lengthOfString = (size_t)((srcFile->arrOfStringStructs[line+1]).ptrToString - (srcFile->arrOfStringStructs[line]).ptrToString);
 }
 
-void freeStructSourceFile (sourceFile* srcFile) {
+void freeStructSourceFile (sourceFile_t* srcFile) {
     assert(srcFile);
 
     free(srcFile->text);
@@ -117,7 +119,7 @@ void replaceSymbols (char* text, char targetSymbol, char replacementSymbol) {
     return;
 }
 
-void fprintfCommentsToAsm (node_t* node, sourceFile* srcFile, FILE* asmFile) {
+void fprintfCommentsToAsm (node_t* node, sourceFile_t* srcFile, FILE* asmFile) {
     assert(node);
     assert(srcFile);
     assert(asmFile);

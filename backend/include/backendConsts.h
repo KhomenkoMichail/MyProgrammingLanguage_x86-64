@@ -15,7 +15,13 @@ enum backendErr_t {
     BACKEND_ERR_TREE_CALLOC = 2,
     BACKEND_ERR_CREATE_TREE = 3,
     BACKEND_ERR_REGS_ARR_CALLOC = 4,
-
+    BACKEND_ERR_LABELS_ARR_CTOR = 5,
+    BACKEND_ERR_PROGRAM_BUF_CALLOC = 6,
+    BACKEND_ERR_SRC_FILE_STRUCT_CALLOC = 7,
+    BACKEND_ERR_NODE_TYPE = 8,
+    BACKEND_ERR_UNEXPECTED_OPCODE = 9,
+    BACKEND_ERR_NO_RIGHT_NODE = 10,
+    BACKEND_ERR_NO_LEFT_NODE = 11,
 }
 
 const char* STACK_POINTER_REG = "rsp";
@@ -119,7 +125,7 @@ struct label_t {
     size_t address;
 
     unsigned long hash;
-    intVector_t* patchOffsets;
+    intVector_t patchOffsets;
 };
 
 labelVector_t {
@@ -129,10 +135,11 @@ labelVector_t {
 };
 
 const int BACKEND_ERR_MSG_LEN = 256;
+const size_t INIT_PROGRAM_BUF_CAPASITY = 1024;
 
 struct backendContext_t {
     file_t srcFile;
-    file_t asmFile;
+    sourceFile_t* sourceFile;
 
     tree_t* tree;
     dump* treeDump;
@@ -153,5 +160,8 @@ struct backendContext_t {
     backendError_t errCode;
     char errMsg[BACKEND_ERR_MSG_LEN];
 }
+
+size_t INIT_LABELS_ARR_CAPACITY = 64;
+size_t INIT_LABEL_PATCH_OFFSETS_CAPACITY = 16;
 
 #endif

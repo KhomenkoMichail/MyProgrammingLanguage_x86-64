@@ -39,14 +39,9 @@ int* varReg (identifierInfo* varInfo) {
     return &(varInfo->idInfo.varInfo.varReg);
 }
 
-const char** cntxtSrcFileName (backendContext_t* cntxt) {
+sourceFile_t** cntxtSrcFile (backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt->srcFile.name);
-}
-
-FILE** cntxtSrcFile (backendContext_t* cntxt) {
-    assert(cntxt);
-    return &(cntxt->srcFile.filePtr);
+    return &(cntxt->sourceFile);
 }
 
 const char** cntxtAsmFileName (backendContext_t* cntxt) {
@@ -59,15 +54,24 @@ FILE** cntxtAsmFile (backendContext_t* cntxt) {
     return &(cntxt->asmFile.filePtr);
 }
 
-
 tree_t** cntxtTree (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->tree);
 }
 
-intVector_t* cntxtProgramBuf (backendContext_t* cntxt) {
+int** cntxtProgramBuf (backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt->programBuf);
+    return &(cntxt.programBuf.buf);
+}
+
+size_t* cntxtProgramBufSize(backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt.programBuf.curSize);
+}
+
+size_t* cntxtProgramBufCapacity(backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt.programBuf.capacity);
 }
 
 regInfo_t** cntxtRegsArr (backendContext_t* cntxt) {
@@ -120,6 +124,11 @@ size_t* intVectorCapacity (intVector_t* intVec) {
     return &(intVec->capacity);
 }
 
+labelVector_t* cntxtLabelsArr (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->labelsArr);
+}
+
 size_t* labelVectorSize (labelVector_t* labelVec) {
     assert(labelVec);
     return &(labelVec->curSize);
@@ -133,6 +142,11 @@ size_t* labelVectorCapacity (labelVector_t* labelVec) {
 label_t** lableVectorArr (labelVector_t* labelVec) {
     assert(labelVec);
     return &(labelVec->labelArr);
+}
+
+label_t* getLable (labelVector_t* labelVec, size_t lableNum) {
+    assert(labelVec);
+    return &((labelVec->labelArr)[lableNum]);
 }
 
 const char** labelName (label_t* label) {
