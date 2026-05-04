@@ -9,9 +9,9 @@
 #include "../../COMMON/include/helpingFunctions.h"
 
 #include "../include/sourceFileParser.h"
-#include "../include/asmProgramWriter.h"
 #include "../include/backendConsts.h"
 #include "../include/structAccessFunctions.h"
+#include "../include/asmProgramWriter.h"
 
 int rewriteAstToAsmCode (backendContext_t* cntxt) {
     assert(cntxt);
@@ -609,4 +609,35 @@ int rewriteOpSqrtToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
     fprintf(*cntxtAsmFile(cntxt), "cvttsd2si %s, xmm0\n", OP_REG_[resultReg]);
 
     return errorCode;
+}
+
+uint32_t pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
+    assert(cntxt);
+
+    uint32_t pushedRegsMask = 0;
+
+    for (int curReg = 0; curReg < NUM_OF_REGS; curReg++) {
+        if (*regIsUsed(cntxt, curReg) && regSaveDecl(cntxt, curReg) == saveDecl) {
+
+            fprintf(*cntxtAsmFile(cntxt), "push %s\n", regName(cntxt, curReg));
+
+            pushedRegsMask |= (1u << curReg);
+            *regIsUsed(cntxt, curReg) = false;
+        }
+    }
+
+    return pushedRegsMask;
+}
+
+void popSavedRegs (backendContext_t* cntxt, uint32_t pushedRegsMask) {
+    assert(cntxt);
+
+    for (int curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--) {
+        if (pushedRegsMask & (1u << curReg)) {
+
+            fprintf(*cntxtAsmFile(cntxt), "pop %s\n", regName(cntxt, curReg));
+
+            *regIsUsed(cntxt, curReg) = true;
+        }
+    }
 }

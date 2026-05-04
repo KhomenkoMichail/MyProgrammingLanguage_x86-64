@@ -187,7 +187,6 @@ int emitMov(backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCo
 
 int emitJMPorCALL (backendContext_t* cntxt, bool isCnd, opCode_t opCode, uint64_t labelAddr) {
     assert(cntxt);
-    //uint64_t nextInstAddr = (uint64_t)cntxt->buffer->code + cntxt->buffer->size + 6;
     int32_t offset = (int32_t)(labelAddr - nextInstAddr);
 
     if (isCnd)

@@ -96,6 +96,11 @@ size_t* curScopeNumOfLocalVars (tree_t* tree) {
     return &((tree->nameTableStack->data[tree->nameTableStack->size - 1])->numOfLocalVars);
 }
 
+uint32_t* curScopePushedRegsMask (tree_t* tree) {
+    assert(tree);
+    return &((tree->nameTableStack->data[tree->nameTableStack->size - 1])->pushedRegsMask);
+}
+
 bool* nodeIsFuncBody (node_t* node) {
     assert(node);
     return &(node->value.id.idInfo.funcInfo.isBodyNode);

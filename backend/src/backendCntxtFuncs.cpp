@@ -3,12 +3,10 @@
 #include <stdlib.h>
 
 #include "../../COMMON/include/structsAndConsts.h"
+
 #include "../include/backendConsts.h"
 #include "../include/backendCntxtFuncs.h"
 #include "../include/sourceFileParser.h"
-
-
-
 
 int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* asmFileName, const char* srcFileName) {
     assert(cntxt);

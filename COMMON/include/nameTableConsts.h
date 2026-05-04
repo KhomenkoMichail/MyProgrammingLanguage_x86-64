@@ -47,7 +47,7 @@ struct nameTable_t {
     identifierInfo* idArray;
     size_t size;
 
-    int numOfCaleeSavedRegs;
+    uint32_t pushedRegsMask;
 
     int numOfParams;
     int numOfLocalVars;
@@ -57,8 +57,7 @@ struct nameTable_t {
 
 typedef struct nameTable_t* stackElement_t;
 
-enum stackErr_t {
-
+enum stackErr_t {S
     badStackPtr= 0b1,
     badDataPtr = 0b10,
     badSize = 0b100,

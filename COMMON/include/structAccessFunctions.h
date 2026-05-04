@@ -33,4 +33,6 @@ size_t* curScopeNumOfLocalVars (tree_t* tree);
 
 bool* nodeIsFuncBody (node_t* node);
 
+uint32_t* curScopePushedRegsMask (tree_t* tree);
+
 #endif
