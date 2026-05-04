@@ -7,8 +7,6 @@ bool regSaveDecl (backendContext_t* cntxt, regCode_t regCode);
 
 const char* regName (backendContext_t* cntxt, regCode_t regCode);
 
-bool* regWasPushed (backendContext_t* cntxt, regCode_t regCode);
-
 int* varOffset (identifierInfo* varInfo);
 
 int* varReg (identifierInfo* varInfo);

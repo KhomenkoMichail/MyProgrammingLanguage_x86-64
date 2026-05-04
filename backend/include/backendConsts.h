@@ -62,25 +62,24 @@ struct regInfo_t {
     const char* name;
     bool isUsed;
     const regSaveDecl_t regSaveDecl;
-    bool wasPushed;
 };
 
-const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved, false },
-                                      { "rbx", true,  calleeSaved,  false },
-                                      { "rcx", false, callerSaved,  false },
-                                      { "rdx", false, callerSaved,  false },
-                                      { "rsp", true,  specialSaved, false },
-                                      { "rbp", true,  specialSaved, false },
-                                      { "rsi", false, callerSaved,  false },
-                                      { "rdi", false, callerSaved,  false },
-                                      { "r8",  false, callerSaved,  false },
-                                      { "r9",  false, callerSaved,  false },
-                                      { "r10", false, callerSaved,  false },
-                                      { "r11", false, callerSaved,  false },
-                                      { "r12", false, calleeSaved,  false },
-                                      { "r13", false, calleeSaved,  false },
-                                      { "r14", false, calleeSaved,  false },
-                                      { "r15", false, calleeSaved,  false }, };
+const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
+                                      { "rbx", true,  calleeSaved  },
+                                      { "rcx", false, callerSaved  },
+                                      { "rdx", false, callerSaved  },
+                                      { "rsp", true,  specialSaved },
+                                      { "rbp", true,  specialSaved },
+                                      { "rsi", false, callerSaved  },
+                                      { "rdi", false, callerSaved  },
+                                      { "r8",  false, callerSaved  },
+                                      { "r9",  false, callerSaved  },
+                                      { "r10", false, callerSaved  },
+                                      { "r11", false, callerSaved  },
+                                      { "r12", false, calleeSaved  },
+                                      { "r13", false, calleeSaved  },
+                                      { "r14", false, calleeSaved  },
+                                      { "r15", false, calleeSaved  }, };
 
 const size_t NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
 

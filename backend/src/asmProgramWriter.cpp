@@ -256,9 +256,9 @@ int rewriteOpInToAsmCode (backendContext_t* cntxt, node_t* node) {
 
     int errorCode = BACKEND_SUCCESS;
 
-    pushSavedRegs(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
     fprintf(*cntxtAsmFile(cntxt), "call stdIn\n");
-    popSavedRegs(cntxt, callerSaved);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     fprintf(*cntxtAsmFile(cntxt), "mov ");
 
@@ -293,9 +293,9 @@ int rewriteOpOutToAsmCode (backendContext_t* cntxt, node_t* node) {
 
     fprintf(*cntxtAsmFile(cntxt), "\n");
 
-    pushSavedRegs(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
     fprintf(*cntxtAsmFile(cntxt), "call stdOut\n");
-    popSavedRegs(cntxt, callerSaved);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     return errorCode;
 }
@@ -311,7 +311,7 @@ int rewriteOpRetToAsmCode (backendContext_t* cntxt, node_t* node) {
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
 
     freeScopeRegs(cntxt);
-    popSavedRegs(cntxt, calleeSaved);
+    popSavedRegs(cntxt, *curScopePushedRegsMask(*cntxtTree(cntxt)));
 
     fprintf(*cntxtAsmFile(cntxt), "mov rsp, rbp\n");
     fprintf(*cntxtAsmFile(cntxt), "pop rbp\n");
@@ -324,7 +324,7 @@ void freeScopeRegs (backendContext_t* cntxt) {
     assert(cntxt);
 
     for (int curReg = 0; curReg < NUM_OF_REGS; curReg++)
-        if (*regIsUsed(cntxt, curReg) && !(*regWasPushed(cntxt, curReg)))
+        if (*regIsUsed(cntxt, curReg) && (regSaveDecl(cntxt, regCode) != specialSaved))
             *regIsUsed(cntxt, curReg) = false;
 }
 
@@ -407,8 +407,7 @@ int rewriteFuncBodyToAsmCode(backendContext_t* cntxt, node_t* node) {
 
     enterNewScope(*cntxtTree(cntxt));
 
-    nameTable_t* curNameTable = getCurNameTable(*cntxtTree(cntxt));
-    *numOfFrameCaleeSavedRegs(curNameTable)  = pushSavedRegs(cntxt, calleeSaved);
+    *curScopePushedRegsMask(*cntxtTree(cntxt))  = pushSavedRegs(cntxt, calleeSaved);
 
     if (*nodeLeft(node)) {
         errorCode = fprintfGettingParamsToAsmCode(cntxt, *nodeLeft(node), *cntxtAsmFile(cntxt));
@@ -454,7 +453,7 @@ int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultR
     int errorCode = BACKEND_SUCCESS;
     int numOfFuncParams = 0;
 
-    pushSavedRegs(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
 
     if (*nodeLeft(node))
         numOfFuncParams = fprintfPassingParams(cntxt, *nodeLeft(node));
@@ -467,7 +466,7 @@ int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultR
     if (resultReg == RIGHT)
         fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", OP_REG_[RIGHT], OP_REG_[LEFT]);
 
-    popSavedRegs(cntxt, callerSaved);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     return errorCode;
 }
@@ -487,35 +486,6 @@ int fprintfPassingParams (backendContext_t* cntxt, node_t* node) {
     }
 
     return curParamsCounter;
-}
-
-int pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
-    assert(cntxt);
-
-    int savedRegsCntr = 0;
-
-    for (size_t curReg = 0; curReg < NUM_OF_REGS; curReg++)
-        if (*regIsUsed(cntxt, curReg) && regSaveDecl(cntxt, curReg) == saveDecl) {
-            fprintf(*cntxtAsmFile(cntxt), "push %s\n", regName(cntxt, curReg));
-
-            *regIsUsed(cntxt, curReg) = false;
-            *regWasPushed(cntxt, curReg) = true;
-
-            savedRegsCntr++;
-        }
-
-    return savedRegsCntr;
-}
-
-void popSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
-    for (int curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--)
-        if (*regWasPushed(cntxt, curReg) && regSaveDecl(cntxt, curReg) == saveDecl) {
-
-            fprintf(*cntxtAsmFile(cntxt), "pop %s\n", regName(cntxt, curReg));
-
-            *regIsUsed(cntxt, curReg) = true;
-            *regWasPushed(cntxt, curReg) = false;
-        }
 }
 
 int rewriteVarAddressToAsmCode(backendContext_t* cntxt, node_t* node) {

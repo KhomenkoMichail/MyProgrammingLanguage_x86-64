@@ -35,10 +35,6 @@ int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultR
 
 int fprintfPassingParams (backendContext_t* cntxt, node_t* node);
 
-int pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
-
-void popSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
-
 int rewriteVarAddressToAsmCode(backendContext_t* cntxt, node_t* node);
 
 void rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
@@ -48,5 +44,9 @@ int findFreeReg (backendContext_t* cntxt);
 void fprintfAsmFileHeader (FILE* asmFile);
 
 int rewriteOpSqrtToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
+
+uint32_t pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
+
+void popSavedRegs (backendContext_t* cntxt, uint32_t pushedRegsMask);
 
 #endif

@@ -23,12 +23,6 @@ const char* regName (backendContext_t* cntxt, regCode_t regCode) {
     return (cntxt->regsArr[regCode]).name;
 }
 
-bool* regWasPushed (backendContext_t* cntxt, regCode_t regCode) {
-    assert(cntxt);
-
-    return &((cntxt->regsArr[regCode]).wasPushed);
-}
-
 int* varOffset (identifierInfo* varInfo) {
     assert(varInfo);
     return &(varInfo->idInfo.varInfo.varOffset);
