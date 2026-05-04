@@ -51,8 +51,10 @@ void fprintfNode(node_t* node, FILE* file) {
         case typeIdentifier:
             if ((node->value).id.identifierHash == getStringHash(MAIN_FUNCTION)) {
                 if(!strcmp(MAIN_FUNCTION, (node->value).id.identifierName))
-                    fprintf (file, "main:%lld ", *nodeLine(node));
+                    fprintf (file, "main[%zu]:%lld ", *nodeFuncNumOfLocalVars(node), *nodeLine(node));
             }
+            else if (*nodeIsFuncBody(node))
+                fprintf (file, "%s[%zu]:%lld ", (node->value).id.identifierName, *nodeFuncNumOfLocalVars(node), *nodeLine(node));
             else
                 fprintf (file, "%s:%lld ", (node->value).id.identifierName, *nodeLine(node));
             break;

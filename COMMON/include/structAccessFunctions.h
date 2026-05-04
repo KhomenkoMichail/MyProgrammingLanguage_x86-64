@@ -23,4 +23,14 @@ int* numOfTableLocalVars (nameTable_t* nametable);
 
 int* numOfFrameCaleeSavedRegs (nameTable_t* nametable);
 
+const char** dumpNameOfDumpFile (dump*);
+
+const char** dumpNameOfGraphFile (dump*);
+
+size_t* nodeFuncNumOfLocalVars (node_t* node);
+
+size_t* curScopeNumOfLocalVars (tree_t* tree);
+
+bool* nodeIsFuncBody (node_t* node);
+
 #endif

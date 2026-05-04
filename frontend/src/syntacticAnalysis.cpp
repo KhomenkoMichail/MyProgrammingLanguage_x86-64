@@ -160,6 +160,8 @@ node_t* getFunction (tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     if(!(*nodeRight(funcNode)))
         return NULL;
 
+    *nodeFuncIsBodyNode(funcNode) = true;
+    *nodeFuncNumOfLocalVars(funcNode) = *curScopeNumOfLocalVars(tree);
     exitScope(tree);
 
     return funcNode;

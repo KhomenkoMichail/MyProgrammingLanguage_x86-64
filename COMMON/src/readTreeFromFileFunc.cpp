@@ -140,20 +140,30 @@ int processNodeType (tree_t* tree, node_t* node, char** bufPos) {
             sscanf(*bufPos, "%64[^:]%n", valueString, &lenOfValue);
             (*bufPos) += lenOfValue;
 
-            sscanf(*bufPos, ":%llu%n", nodeLine(node), &lenOfValue);
+            sscanf(*bufPos, ":%lld%n", nodeLine(node), &lenOfValue);
             (*bufPos) += (lenOfValue);
 
             (nodeValue(node))->constValue = (int)atof(valueString);
             break;
 
         case typeIdentifier: {
-            sscanf(*bufPos, "%*[^:]%n", &lenOfValue);
+            sscanf(*bufPos, "%*[^[:]%n", &lenOfValue);
             (nodeValue(node))->id.identifierName = *bufPos;
 
             (*bufPos) += lenOfValue;
-            sscanf(*bufPos, ":%llu%n", nodeLine(node), &lenOfValue);
+            char* endOfNamePos = *bufPos;
 
-            (**bufPos) = '\0';
+            if (**bufPos == '[') {
+                sscanf(*bufPos, "[%zu]%n", nodeFuncNumOfLocalVars(node), &lenOfValue);
+                (*bufPos) += (lenOfValue);
+                *nodeIsFuncBody(node) = true;
+            }
+            else
+                *nodeIsFuncBody(node) = false;
+
+            sscanf(*bufPos, ":%lld%n", nodeLine(node), &lenOfValue);
+
+            *endOfNamePos = '\0';
             (*bufPos) += (lenOfValue);
 
             translateRussianWorlds ((nodeValue(node))->id.identifierName); //NOTE
@@ -166,7 +176,7 @@ int processNodeType (tree_t* tree, node_t* node, char** bufPos) {
             sscanf(*bufPos, "%64[^:]%n", valueString, &lenOfValue);
             (*bufPos) += lenOfValue;
 
-            sscanf(*bufPos, ":%llu%n", nodeLine(node), &lenOfValue);
+            sscanf(*bufPos, ":%lld%n", nodeLine(node), &lenOfValue);
             (*bufPos) += (lenOfValue);
 
             #include "../../COMMON/include/operatorsArray.h"

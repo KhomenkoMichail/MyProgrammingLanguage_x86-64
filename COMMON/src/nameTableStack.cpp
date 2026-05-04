@@ -221,6 +221,7 @@ identifierInfo* addIdToCurrentScope(tree_t* tree, char* name, idType_t idType) {
     identifierInfo* newID = addIdentifierInNameTable(currentTable, name, idType, tree->currentScopeLevel);
 
     if (idType == idVAR) {
+        currentTable->numOfLocalVars += 1;
         *varReg(newID) = NOT_IN_REG;
         *varOffset(newID) = NOT_IN_MEMORY;
     }

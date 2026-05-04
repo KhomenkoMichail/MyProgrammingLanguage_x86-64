@@ -65,7 +65,7 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
     *cntxtProgramBufCapacity(cntxt) = INIT_PROGRAM_BUF_CAPASITY;
 
 
-    *cntxtRegsArr(cntxt) = (regInfo_t*)calloc(1, sizeof(INIT_REGS_ARRAY));
+    *cntxtRegsArr(cntxt) = (regInfo_t*)calloc(NUM_OF_REGS, sizeof(regInfo_t));
     if(!(*cntxtRegsArr(cntxt))) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_REGS_ARR_CALLOC,
                         "Error regs array calloc in func %s, %s:%d\n",
@@ -89,17 +89,17 @@ labelVector_t* labelVectorCtor (labelVector_t* newLabelVector, size_t initCapaci
     *labelVectorSize(newLabelVector) = 0;
     *labelVectorCapacity(newLabelVector) = initCapacity;
 
-    *lableVectorArr(newLabelVector) = (label_t*)calloc(initCapacity, sizeof(label_t));
-    if (!(*lableVectorArr(newLabelVector)))
+    *labelVectorArr(newLabelVector) = (label_t*)calloc(initCapacity, sizeof(label_t));
+    if (!(*labelVectorArr(newLabelVector)))
         return NULL;
 
     for (size_t numOfLabel = 0; numOfLabel < initCapacity; numOfLabel++) {
-        label_t* curLable = getLable(newLabelVector, numOfLabel);
+        label_t* curLabel = getLabel(newLabelVector, numOfLabel);
 
-        *intVectorCapacity(*(labelPatchOffsets(curLable))) = INIT_LABEL_PATCH_OFFSETS_CAPACITY;
-        *intVectorBuf(*(labelPatchOffsets(curLable))) = (int*)calloc(INIT_LABEL_PATCH_OFFSETS_CAPACITY, sizeof(int));
+        *intVectorCapacity(*(labelPatchOffsets(curLabel))) = INIT_LABEL_PATCH_OFFSETS_CAPACITY;
+        *intVectorBuf(*(labelPatchOffsets(curLabel))) = (int*)calloc(INIT_LABEL_PATCH_OFFSETS_CAPACITY, sizeof(int));
 
-        if (!(*intVectorBuf(*labelPatchOffsets(curLable))))
+        if (!(*intVectorBuf(*labelPatchOffsets(curLabel))))
             return NULL;
     }
 
@@ -110,16 +110,16 @@ void labelVectorDtor (labelVector_t* labelVector) {
     assert(labelVector);
 
     for (size_t numOfLabel = 0; numOfLabel < *labelVectorCapacity(labelVector); numOfLabel++) {
-        label_t* curLable = getLable(newLabelVector, numOfLabel);
+        label_t* curLabel = getLabel(labelVector, numOfLabel);
 
-        if (*labelName(curLabel))
-            free(*labelName(curLabel));
+        //if (*labelName(curLabel))           //FIXME ??
+        //    free(*labelName(curLabel));
 
-        if (*intVectorBuf(*labelPatchOffsets(curLable)))
-            free(*intVectorBuf(*labelPatchOffsets(curLable)));
+        if (*intVectorBuf(*labelPatchOffsets(curLabel)))
+            free(*intVectorBuf(*labelPatchOffsets(curLabel)));
     }
 
-    free(*lableVectorArr(labelVector));
+    free(*labelVectorArr(labelVector));
 }
 
 void backendCntxtDtor (backendContext_t* cntxt) {

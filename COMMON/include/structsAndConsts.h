@@ -22,6 +22,10 @@ const size_t STR_SIZE = 64;
 
 const size_t AMOUNT_OF_RAM = 3*100*100;
 
+const int NOT_IN_REG = -1;
+
+const int NOT_IN_MEMORY = 0xBADDEAD;
+
 #define MAIN_FUNCTION "atti"
 
 struct shyriiwookNum {

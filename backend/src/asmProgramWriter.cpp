@@ -16,24 +16,27 @@
 int rewriteAstToAsmCode (backendContext_t* cntxt) {
     assert(cntxt);
 
-    *cntxtAsmFile(cntxt) = fopen(nameOfAsmFile, "w");
+    *cntxtAsmFile(cntxt) = fopen(*cntxtNameOfAsmFile(cntxt), "w");
 
     if (!(*cntxtAsmFile(cntxt))) {
-        fprintf(stderr, "Error of opening file \"%s\"", nameOfAsmFile);
+        fprintf(stderr, "Error of opening file \"%s\"", *cntxtNameOfAsmFile(cntxt));
         perror("");
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_OPENING_ASM_FILE,
                         "Error of opening file \"%s\" in func %s, %s:%d\n",
-                        nameOfAsmFile, __func__, __FILE__, __LINE__);
+                        *cntxtNameOfAsmFile(cntxt), __func__, __FILE__, __LINE__);
     }
+    fprintfAsmFileHeader(*cntxtAsmFile(cntxt));
 
     rewriteNodeToAsmCode(cntxt, *treeRoot(*cntxtTree(cntxt)), LEFT);
 
-    if (fclose(asmFile) != 0) {
-        fprintf(stderr, "Error of closing file \"%s\"", nameOfAsmFile);
+    fprintf(*cntxtAsmFile(cntxt), "%%include \"stdlib.asm\"\n");
+
+    if (fclose(*cntxtAsmFile(cntxt)) != 0) {
+        fprintf(stderr, "Error of closing file \"%s\"", *cntxtNameOfAsmFile(cntxt));
         perror("");
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_OPENING_ASM_FILE,
                         "Error of closing file \"%s\" in func %s, %s:%d\n",
-                        nameOfAsmFile, __func__, __FILE__, __LINE__);
+                        *cntxtNameOfAsmFile(cntxt), __func__, __FILE__, __LINE__);
     }
 
     return BACKEND_SUCCESS;
@@ -44,6 +47,7 @@ int rewriteNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t res
     assert(cntxt);
 
     fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "int3         ; breackPoint\n");
 
     switch (*nodeType(node)) {
         case typeNumber:
@@ -52,7 +56,7 @@ int rewriteNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t res
         case typeOperator:
             return rewriteOpNodeToAsmCode(cntxt, node, resultReg);
         case typeIdentifier:
-            return rewriteIdNodeToAsmCode(cntxt, node, resultReg, asmFile);
+            return rewriteIdNodeToAsmCode(cntxt, node, resultReg);
         case typeError:
         default:
             SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NODE_TYPE,
@@ -77,11 +81,12 @@ int rewriteOpNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
         case opASSIGN: return rewriteOpAssignToAsmCode(cntxt, node, resultReg);
         case opWHILE: return rewriteOpWhileToAsmCode(cntxt, node, resultReg);
         case opIF: return rewriteOpIfToAsmCode(cntxt, node, resultReg);
-        case opIN: return rewriteOpInToAsmCode(cntxt, node, resultReg);   //FIXME
-        case opOUT: return rewriteOpOutToAsmCode(cntxt, node, resultReg); //FIXME
+        case opIN: return rewriteOpInToAsmCode(cntxt, node, resultReg);
+        case opOUT: return rewriteOpOutToAsmCode(cntxt, node);
         case opRET: return rewriteOpRetToAsmCode(cntxt, node, resultReg);
+        case opSQRT: return rewriteOpSqrtToAsmCode(cntxt, node, resultReg);
 
-        case opHLT: fprintf (*cntxtAsmFile(cntxt), "HLT\n"); return BACKEND_SUCCESS; //FIXME
+        case opHLT: fprintf (*cntxtAsmFile(cntxt), "call stdExit\n"); return BACKEND_SUCCESS;
 
         case opEQUAL:
         case opBELOW:
@@ -91,7 +96,7 @@ int rewriteOpNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
         case opE_ABOVE:
             return rewriteOpCompareToAsmCode(cntxt, node, resultReg);
 
-        case opSQRT:       //FIXME
+
         case opUNITED_ON:
         case opUNITED_OFF:
         case opQUOTES:
@@ -116,6 +121,7 @@ int rewriteOpCalcToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
 
     if (*nodeRight(node)) {
         errorCode = rewriteNodeToAsmCode (cntxt, *nodeRight(node), RIGHT);
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
@@ -141,15 +147,15 @@ int rewriteOpCalcToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
         fprintf(*cntxtAsmFile(cntxt), "imul %s, %s\n", OP_REG_[LEFT], OP_REG_[RIGHT]);
 
     if (nodeValue(node)->opCode == opDIV) {
-        if (*regIsUsed(regsArray, RDX))
+        if (*regIsUsed(cntxt, RDX))
             fprintf(*cntxtAsmFile(cntxt), "push rdx\n");
 
-        fprintf(*cntxtAsmFile(cntxt), "mov rax, %s\n", OP_REG_[LEFT]);
+        fprintf(*cntxtAsmFile(cntxt), "mov rax, %s\n", OP_REG_[LEFT]);   //FIXME
         fprintf(*cntxtAsmFile(cntxt), "cqo\n");
         fprintf(*cntxtAsmFile(cntxt), "idiv %s\n", OP_REG_[RIGHT]);
-        fprintf(*cntxtAsmFile(cntxt), "mov %s, rax\n", OP_REG_[LEFT]);
+        fprintf(*cntxtAsmFile(cntxt), "mov %s, rax\n", OP_REG_[LEFT]);   //FIXME
 
-        if (*regIsUsed(regsArray, RDX))
+        if (*regIsUsed(cntxt, RDX))
             fprintf(*cntxtAsmFile(cntxt), "pop rdx\n");
     }
 
@@ -166,7 +172,7 @@ int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t
     int errorCode = BACKEND_SUCCESS;
 
     if (*nodeRight(node))
-        errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), OP_REG_[RIGHT]);
+        errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), RIGHT);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
                         "Error: assign node does not have RIGHT in func %s, %s:%d\n",
@@ -195,23 +201,26 @@ int rewriteOpWhileToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
 
     (*cntxtWhileCounter(cntxt))++;
+    int curWhileCntr = *cntxtWhileCounter(cntxt);
 
-    fprintf(*cntxtAsmFile(cntxt), "while%d:\n", *cntxtWhileCounter(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "while%d:\n", curWhileCntr);
 
-    if (*nodeLeft(node))
+    if (*nodeLeft(node)) {
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
+    }
 
     fprintf(*cntxtAsmFile(cntxt), "test %s, %s\n", OP_REG_[LEFT], OP_REG_[LEFT]);
-    fprintf(*cntxtAsmFile(cntxt), "jz endwhile%d\n", *cntxtWhileCounter(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "jz endwhile%d\n", curWhileCntr);
 
     if (*nodeRight(node))
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), RIGHT);
 
-    fprintf(*cntxtAsmFile(cntxt), "jmp while%d\n", *cntxtWhileCounter(cntxt));
-    fprintf(*cntxtAsmFile(cntxt), "endwhile%d\n", *cntxtWhileCounter(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "jmp while%d\n", curWhileCntr);
+    fprintf(*cntxtAsmFile(cntxt), "endwhile%d:\n", curWhileCntr);
 
     return errorCode;
 }
@@ -220,20 +229,23 @@ int rewriteOpIfToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
 
     (*cntxtIfCounter(cntxt))++;
+    int curIfCntr = *cntxtIfCounter(cntxt);
 
-    if (*nodeLeft(node))
+    if (*nodeLeft(node)) {
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
+    }
 
     fprintf(*cntxtAsmFile(cntxt), "test %s, %s\n", OP_REG_[LEFT], OP_REG_[LEFT]);
-    fprintf(*cntxtAsmFile(cntxt), "jz endif%d\n", *cntxtIfCounter(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "jz endif%d\n", curIfCntr);
 
     if (*nodeRight(node))
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), RIGHT);
 
-    fprintf(*cntxtAsmFile(cntxt), "endif%d:\n", *cntxtIfCounter(cntxt));
+    fprintf(*cntxtAsmFile(cntxt), "endif%d:\n", curIfCntr);
 
     return errorCode;
 }
@@ -242,6 +254,23 @@ int rewriteOpInToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
+    int errorCode = BACKEND_SUCCESS;
+
+    pushSavedRegs(cntxt, callerSaved);
+    fprintf(*cntxtAsmFile(cntxt), "call stdIn\n");
+    popSavedRegs(cntxt, callerSaved);
+
+    fprintf(*cntxtAsmFile(cntxt), "mov ");
+
+    if (*nodeLeft(node))
+        errorCode = rewriteVarAddressToAsmCode(cntxt, *nodeLeft(node));
+    else {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                        "Error: in node does not have LEFT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+
+    fprintf(*cntxtAsmFile(cntxt), ", rax\n");
 
     return errorCode;
 }
@@ -251,57 +280,76 @@ int rewriteOpOutToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
+    int errorCode = BACKEND_SUCCESS;
+
+    fprintf(*cntxtAsmFile(cntxt), "mov rax, ");
+    if (*nodeLeft(node))
+        errorCode = rewriteVarAddressToAsmCode(cntxt, *nodeLeft(node));
+    else {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                "Error: OUT op node does not have LEFT in func %s, %s:%d\n",
+                __func__, __FILE__, __LINE__);
+    }
+
+    fprintf(*cntxtAsmFile(cntxt), "\n");
+
+    pushSavedRegs(cntxt, callerSaved);
+    fprintf(*cntxtAsmFile(cntxt), "call stdOut\n");
+    popSavedRegs(cntxt, callerSaved);
 
     return errorCode;
 }
+
 
 int rewriteOpRetToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
 
     if (*nodeLeft(node))
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
 
-    nameTable_t* curNameTable = getCurNameTable(*cntxtTree(cntxt));
-    fprintf(*cntxtAsmFile(cntxt), "add %s, %d\n", STACK_POINTER_REG, *numOfTableLocalVars(curNameTable) * 8);
+    freeScopeRegs(cntxt);
+    popSavedRegs(cntxt, calleeSaved);
 
-    freeScopeRegs(regsArray);
-    popSavedRegs(asmFile);
-    fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", STACK_POINTER_REG, BASE_POINTER_REG);
-    fprintf(*cntxtAsmFile(cntxt), "pop %s\n", BASE_POINTER_REG);
+    fprintf(*cntxtAsmFile(cntxt), "mov rsp, rbp\n");
+    fprintf(*cntxtAsmFile(cntxt), "pop rbp\n");
     fprintf(*cntxtAsmFile(cntxt), "ret\n");
 
     return errorCode;
 }
 
-void freeScopeRegs (regInfo_t regsArray) {
+void freeScopeRegs (backendContext_t* cntxt) {
+    assert(cntxt);
+
     for (int curReg = 0; curReg < NUM_OF_REGS; curReg++)
-        if (*regIsUsed(regsArray, curReg) && !(*regWasPushed(regsArray, curReg)))
-            *regIsUsed(regsArray, curReg) = false;
+        if (*regIsUsed(cntxt, curReg) && !(*regWasPushed(cntxt, curReg)))
+            *regIsUsed(cntxt, curReg) = false;
 }
 
 int rewriteOpCompareToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
     assert(cntxt);
     assert(node);
 
+    int errorCode = BACKEND_SUCCESS;
 
-
-    int errorCode = BACKEND_SUCCEESS;
-
-    if (*nodeRight(node))
+    if (*nodeRight(node)) {
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), RIGHT);
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
+    }
     else {
-        printf("Error! Compare node does not have RIGHT.\n");
-        return 1;
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
+                        "Error: compare node does not have RIGHT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
     }
 
     if (*nodeLeft(node))
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
     else {
-        printf("Error! Compare node does not have LEFT.\n");
-        return 1;
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                        "Error: compare node does not have LEFT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
     }
 
     fprintf(*cntxtAsmFile(cntxt), "cmp %s, %s\n", OP_REG_[LEFT], OP_REG_[RIGHT]);
@@ -328,52 +376,54 @@ int rewriteIdNodeToAsmCode(backendContext_t* cntxt, node_t* node, resultReg_t re
     assert(cntxt);
     assert(node);
 
-
-
     if(*nodeRight(node))
         return rewriteFuncBodyToAsmCode(cntxt, node);
 
     const char* idName = nodeValue(node)->id.identifierName;
-    size_t numOfCurNameTable = tree->nameTableStack->size - 1;
-    nameTable_t* curNameTable = (tree->nameTableStack->data)[numOfCurNameTable];
 
+    nameTable_t* curNameTable = getCurNameTable(*cntxtTree(cntxt));
     identifierInfo* searchedId = findIdInTable(curNameTable, idName);
 
     if (searchedId)
-        return rewriteVarNodeToAsmCode(cntxt, node, resultReg, asmFile);
+        return rewriteVarNodeToAsmCode(cntxt, node, resultReg);
     else
-        return rewriteFuncCallNodeToAsmCode(cntxt, node, asmFile, resultReg, srcFile);
+        return rewriteFuncCallNodeToAsmCode(cntxt, node, resultReg);
 }
 
 int rewriteFuncBodyToAsmCode(backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-
-
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
 
     fprintf(*cntxtAsmFile(cntxt), "%s:\n", nodeValue(node)->id.identifierName);
-    fprintf(*cntxtAsmFile(cntxt), "push %s\n", BASE_POINTER_REG);
-    fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", BASE_POINTER_REG, STACK_POINTER_REG);
+    fprintf(*cntxtAsmFile(cntxt), "push rbp\n");
+    fprintf(*cntxtAsmFile(cntxt), "mov rbp, rsp\n");
 
+    size_t numOfStackVars = (*nodeFuncNumOfLocalVars(node) > NUM_OF_VARS_REGS) ?
+                            *nodeFuncNumOfLocalVars(node) - NUM_OF_VARS_REGS : 0;
 
-    enterNewScope(tree);
+    fprintf(*cntxtAsmFile(cntxt), "sub rsp, %zu\n", numOfStackVars * 8);
 
-    nameTable_t* curNameTable = getCurNameTable(tree);
-    *numOfFrameCaleeSavedRegs(curNameTable)  = pushSavedRegs(calleeSaved, asmFile);
+    enterNewScope(*cntxtTree(cntxt));
 
-    if (*nodeLeft(node))
-        errorCode = fprintfGettingParamsToAsmCode(cntxt, *nodeLeft(node), asmFile);
+    nameTable_t* curNameTable = getCurNameTable(*cntxtTree(cntxt));
+    *numOfFrameCaleeSavedRegs(curNameTable)  = pushSavedRegs(cntxt, calleeSaved);
+
+    if (*nodeLeft(node)) {
+        errorCode = fprintfGettingParamsToAsmCode(cntxt, *nodeLeft(node), *cntxtAsmFile(cntxt));
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
+    }
 
     if (*nodeRight(node))
         errorCode = rewriteNodeToAsmCode(cntxt, *nodeRight(node), LEFT);
     else {
-        printf("Error! Func body does not have RIGHT!\n");
-        return 1;
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
+                        "Error: func body node does not have RIGHT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
     }
 
-    exitScope(tree);
+    exitScope(*cntxtTree(cntxt));
 
     return errorCode;
 }
@@ -382,15 +432,17 @@ int fprintfGettingParamsToAsmCode (backendContext_t* cntxt, node_t* node, FILE* 
     assert(cntxt);
     assert(node);
 
-
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
 
     if(*nodeLeft(node) && *nodeRight(node)) {
-        errorCode = fprintfGettingParamsToAsmCode (cntxt, *nodeLeft(node), asmFile);
-        errorCode = fprintfGettingParamsToAsmCode (cntxt, *nodeRight(node), asmFile);
+        errorCode = fprintfGettingParamsToAsmCode(cntxt, *nodeLeft(node), *cntxtAsmFile(cntxt));
+
+        if (errorCode != BACKEND_SUCCESS) return errorCode;
+
+        errorCode = fprintfGettingParamsToAsmCode(cntxt, *nodeRight(node), *cntxtAsmFile(cntxt));
     }
     else
-        addIdToCurrentScope(tree, nodeVarName(node), idPARAM);
+        addIdToCurrentScope(*cntxtTree(cntxt), nodeVarName(node), idPARAM);
 
     return errorCode;
 }
@@ -399,25 +451,23 @@ int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultR
     assert(cntxt);
     assert(node);
 
-
-
-    int errorCode = BACKEND_SUCCEESS;
+    int errorCode = BACKEND_SUCCESS;
     int numOfFuncParams = 0;
 
-    pushSavedRegs(callerSaved, asmFile);
+    pushSavedRegs(cntxt, callerSaved);
 
     if (*nodeLeft(node))
-        numOfFuncParams = fprintfPassingParams (cntxt, *nodeLeft(node));
+        numOfFuncParams = fprintfPassingParams(cntxt, *nodeLeft(node));
 
     fprintf(*cntxtAsmFile(cntxt), "call %s\n", nodeValue(node)->id.identifierName);
 
     if (*nodeLeft(node))
-        fprintf(*cntxtAsmFile(cntxt), "add %s, %d", STACK_POINTER_REG, numOfFuncParams * 8);
+        fprintf(*cntxtAsmFile(cntxt), "add rsp, %d\n", numOfFuncParams * 8);
 
     if (resultReg == RIGHT)
         fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", OP_REG_[RIGHT], OP_REG_[LEFT]);
 
-    popSavedRegs(asmFile);
+    popSavedRegs(cntxt, callerSaved);
 
     return errorCode;
 }
@@ -427,8 +477,8 @@ int fprintfPassingParams (backendContext_t* cntxt, node_t* node) {
     int curParamsCounter = 0;
 
     if(*nodeType(node) == typeOperator&& (*nodeValue(node)).opCode == opCOMMA) {
-        curParamsCounter += fprintfPassingParams (cntxt, *nodeRight(node));
-        curParamsCounter += fprintfPassingParams (cntxt, *nodeLeft(node));
+        curParamsCounter += fprintfPassingParams(cntxt, *nodeRight(node));
+        curParamsCounter += fprintfPassingParams(cntxt, *nodeLeft(node));
     }
     else {
         rewriteNodeToAsmCode (cntxt, node, LEFT);
@@ -439,88 +489,124 @@ int fprintfPassingParams (backendContext_t* cntxt, node_t* node) {
     return curParamsCounter;
 }
 
-int pushSavedRegs (regSaveDecl_t saveDecl, FILE* asmFile) {
+int pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
+    assert(cntxt);
+
     int savedRegsCntr = 0;
 
     for (size_t curReg = 0; curReg < NUM_OF_REGS; curReg++)
-        if (*regIsUsed(regsArray, curReg) && regSaveDecl(regsArray, curReg) == saveDecl) {
-            fprintf(*cntxtAsmFile(cntxt), "push %s\n", regName(regsArray, curReg));
-            *regIsUsed(regsArray, curReg) = false;
-            *regWasPushed(regsArray, curReg) = true;
+        if (*regIsUsed(cntxt, curReg) && regSaveDecl(cntxt, curReg) == saveDecl) {
+            fprintf(*cntxtAsmFile(cntxt), "push %s\n", regName(cntxt, curReg));
+
+            *regIsUsed(cntxt, curReg) = false;
+            *regWasPushed(cntxt, curReg) = true;
+
             savedRegsCntr++;
         }
 
     return savedRegsCntr;
 }
 
-void popSavedRegs (FILE* asmFile) {
+void popSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
     for (int curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--)
-        if (*regWasPushed(regsArray, curReg)) {
-            fprintf(*cntxtAsmFile(cntxt), "pop %s\n", regName(regsArray, curReg));
-            *regIsUsed(regsArray, curReg) = true;
-            *regWasPushed(regsArray, curReg) = false;
+        if (*regWasPushed(cntxt, curReg) && regSaveDecl(cntxt, curReg) == saveDecl) {
+
+            fprintf(*cntxtAsmFile(cntxt), "pop %s\n", regName(cntxt, curReg));
+
+            *regIsUsed(cntxt, curReg) = true;
+            *regWasPushed(cntxt, curReg) = false;
         }
 }
 
-void rewriteVarAddressToAsmCode (backendContext_t* cntxt, node_t* node, FILE* asmFile) {
+int rewriteVarAddressToAsmCode(backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-
-    int errorCode = BACKEND_SUCCEESS;
-
     if (*nodeType(node) != typeIdentifier) {
-        printf("Error! In func %s unexpected type of node.\n", __func__);
-        return;
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_UNEXPECTED_NODE_TYPE,
+                        "Error: node type <%d> is unexpected in func %s, %s:%d\n",
+                        *nodeType(node), *cntxtNameOfAsmFile(cntxt), __func__, __FILE__, __LINE__);
     }
 
     char* varName = nodeVarName(node);
 
-    nameTable_t* curNameTable = getCurNameTable(tree);
+    nameTable_t* curNameTable = getCurNameTable(*cntxtTree(cntxt));
 
     identifierInfo* searchedVarId = findIdInTable(curNameTable, varName);
 
     if(!searchedVarId)
-        searchedVarId = addIdToCurrentScope(tree, varName, idVAR);
+        searchedVarId = addIdToCurrentScope(*cntxtTree(cntxt), varName, idVAR);
 
-    if (*varReg(searchedVarId) == NOT_IN_REG) {
-        int freeRegCode = findFreeReg(regsArray);
+    if (*varReg(searchedVarId) == NOT_IN_REG) {           //FIXME NOT_IN_REG??
+        int freeRegCode = findFreeReg(cntxt);
 
         if (freeRegCode != NOT_IN_REG) {
             *varReg(searchedVarId) = freeRegCode;
-            *regIsUsed(regsArray, freeRegCode) = true;
+            *regIsUsed(cntxt, freeRegCode) = true;
         }
         else {
             if (*varOffset(searchedVarId) == NOT_IN_MEMORY) {
                 *numOfTableLocalVars(curNameTable) += 1;
-                *varOffset(searchedVarId) = -((*numOfTableLocalVars(curNameTable) +
-                                               *numOfFrameCaleeSavedRegs(curNameTable)) * 8);
+                *varOffset(searchedVarId) = -((*numOfTableLocalVars(curNameTable) + 1) * 8);
             }
-            fprintf(*cntxtAsmFile(cntxt), "[%s + %d]", BASE_POINTER_REG, *varOffset(searchedVarId));
-            return;
+            fprintf(*cntxtAsmFile(cntxt), "[rbp + %d]", *varOffset(searchedVarId));
+            return BACKEND_SUCCESS;
         }
     }
-    fprintf(*cntxtAsmFile(cntxt), "%s", regName(regsArray, *varReg(searchedVarId)));
+    fprintf(*cntxtAsmFile(cntxt), "%s", regName(cntxt, *varReg(searchedVarId)));
 
-    return;
+    return BACKEND_SUCCESS;
 }
 
-void rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg, FILE* asmFile) {
+void rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
     assert(cntxt);
     assert(node);
 
 
     fprintf(*cntxtAsmFile(cntxt), "mov %s, ", OP_REG_[resultReg]);
-    rewriteVarAddressToAsmCode (cntxt, node, asmFile);
+    rewriteVarAddressToAsmCode(cntxt, node);
     fprintf(*cntxtAsmFile(cntxt), "\n");
 }
 
-int findFreeReg (regInfo_t* regsArray) {
-    assert(regsArray);
+int findFreeReg (backendContext_t* cntxt) {
+    assert(cntxt);
 
     for (int curReg = 0; curReg < NUM_OF_REGS; curReg++)
-        if (!(*regIsUsed(regsArray, curReg)))
+        if (!(*regIsUsed(cntxt, curReg)))
             return curReg;
 
     return NOT_IN_REG;
+}
+
+void fprintfAsmFileHeader (FILE* asmFile) {
+    assert(asmFile);
+
+    fprintf(asmFile,
+    "section .text\n"
+    "global _start\n\n"
+
+    "_start:\n"
+    "    call main\n"
+    "    call stdExit\n\n");
+}
+
+int rewriteOpSqrtToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+    assert(cntxt);
+    assert(node);
+
+    int errorCode = BACKEND_SUCCESS;
+
+    if (*nodeLeft(node)) {
+        errorCode = rewriteNodeToAsmCode(cntxt, *nodeLeft(node), LEFT);
+    } else {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                           "Error: SQRT node does not have LEFT in func %s, %s:%d\n",
+                           __func__, __FILE__, __LINE__);
+    }
+
+    fprintf(*cntxtAsmFile(cntxt), "cvtsi2sd xmm0, %s\n", OP_REG_[LEFT]);
+    fprintf(*cntxtAsmFile(cntxt), "sqrtsd xmm0, xmm0\n");
+    fprintf(*cntxtAsmFile(cntxt), "cvttsd2si %s, xmm0\n", OP_REG_[resultReg]);
+
+    return errorCode;
 }

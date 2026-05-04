@@ -85,3 +85,18 @@ const char** dumpNameOfGraphFile (dump*) {
     assert(dump);
     return &(dump->nameOfGraphFile);
 }
+
+size_t* nodeFuncNumOfLocalVars (node_t* node) {
+    assert(node);
+    return &(node->value.id.idInfo.funcInfo.numOfLocalVars);
+}
+
+size_t* curScopeNumOfLocalVars (tree_t* tree) {
+    assert(tree);
+    return &((tree->nameTableStack->data[tree->nameTableStack->size - 1])->numOfLocalVars);
+}
+
+bool* nodeIsFuncBody (node_t* node) {
+    assert(node);
+    return &(node->value.id.idInfo.funcInfo.isBodyNode);
+}

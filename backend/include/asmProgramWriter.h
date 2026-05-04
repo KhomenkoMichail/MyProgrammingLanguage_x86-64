@@ -1,52 +1,52 @@
 #ifndef ASM_PROGRAM_WRITER_H
 #define ASM_PROGRAM_WRITER_H
 
-int rewriteAstToAsmCode (tree_t* tree, const char* nameOfAsmFile,
-                                       const char* sourceFileName);
+int rewriteAstToAsmCode (backendContext_t* cntxt);
 
-int rewriteNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                          sourceFile* srcFile);
+int rewriteNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteOpNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                            sourceFile* srcFile);
+int rewriteOpNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteOpCalcToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                            sourceFile* srcFile);
+int rewriteOpCalcToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteOpAssignToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                              sourceFile* srcFile);
+int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int writeVarAddressToAsm (tree_t* tree, node_t* varNode, FILE* asmFile);
+int rewriteOpWhileToAsmCode (backendContext_t* cntxt, node_t* node);
 
-int rewriteVarNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile);
+int rewriteOpIfToAsmCode (backendContext_t* cntxt, node_t* node);
 
-int rewriteOpWhileToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                             sourceFile* srcFile);
+int rewriteOpInToAsmCode (backendContext_t* cntxt, node_t* node);
 
-int rewriteOpIfToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                          sourceFile* srcFile);
+int rewriteOpOutToAsmCode (backendContext_t* cntxt, node_t* node);
 
-int rewriteOpInToAsmCode (tree_t* tree, node_t* node, FILE* asmFile);
+int rewriteOpRetToAsmCode (backendContext_t* cntxt, node_t* node);
 
-int rewriteOpOutToAsmCode (tree_t* tree, node_t* node, FILE* asmFile);
+void freeScopeRegs (backendContext_t* cntxt);
 
-int rewriteOpRetToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                           sourceFile* srcFile);
+int rewriteOpCompareToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteOpCompareToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                               sourceFile* srcFile);
+int rewriteIdNodeToAsmCode(backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteIdNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                            sourceFile* srcFile);
+int rewriteFuncBodyToAsmCode(backendContext_t* cntxt, node_t* node);
 
-int rewriteFuncBodyToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                              sourceFile* srcFile);
+int fprintfGettingParamsToAsmCode (backendContext_t* cntxt, node_t* node, FILE* asmFile);
 
-int fprintfGettingParamsToAsmCode (tree_t* tree, node_t* node, FILE* asmFile);
+int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteFuncCallNodeToAsmCode (tree_t* tree, node_t* node, FILE* asmFile,
-                                  sourceFile* srcFile);
+int fprintfPassingParams (backendContext_t* cntxt, node_t* node);
 
-void freeScopeRegs (regInfo_t regsArray);
+int pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
+
+void popSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
+
+int rewriteVarAddressToAsmCode(backendContext_t* cntxt, node_t* node);
+
+void rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
+
+int findFreeReg (backendContext_t* cntxt);
+
+void fprintfAsmFileHeader (FILE* asmFile);
+
+int rewriteOpSqrtToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
 #endif

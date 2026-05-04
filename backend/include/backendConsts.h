@@ -3,7 +3,7 @@
 
 #define SET_ERR_AND_RETURN(cntxt, errCode, ...) do { \
     if (cntxt) { \
-        (cntxt)->errCode = code; \
+        (cntxt)->errCode = errCode; \
         snprintf((cntxt)->errMsg, sizeof((cntxt)->errMsg), __VA_ARGS__); \
     } \
     return errCode; \
@@ -22,12 +22,7 @@ enum backendErr_t {
     BACKEND_ERR_UNEXPECTED_OPCODE = 9,
     BACKEND_ERR_NO_RIGHT_NODE = 10,
     BACKEND_ERR_NO_LEFT_NODE = 11,
-}
-
-const char* STACK_POINTER_REG = "rsp";
-const char* BASE_POINTER_REG = "rbp";
-
-const char* RET_REG           = "rax";
+};
 
 enum resultReg_t {
     LEFT  = 0,
@@ -37,7 +32,6 @@ enum resultReg_t {
 const char* OP_REG_[2] = { "rax", "rbx" };
 
 enum regCode_t {
-    NO_REG = -1,
     RAX = 0,
     RBX = 1,
     RCX = 2,
@@ -48,6 +42,7 @@ enum regCode_t {
     RDI = 7,
     R8 = 8,
     R9 = 9,
+    R10 = 10,
     R11 = 11,
     R12 = 12,
     R13 = 13,
@@ -55,8 +50,7 @@ enum regCode_t {
     R15 = 15
 };
 
-const int NOT_IN_REG = 16;
-const int NOT_IN_MEMORY = 0xBADDEAD;
+const size_t NUM_OF_VARS_REGS = 12;
 
 enum regSaveDecl_t {
     callerSaved  = 1,
@@ -128,7 +122,7 @@ struct label_t {
     intVector_t patchOffsets;
 };
 
-labelVector_t {
+struct labelVector_t {
     label_t* labelArr;
     size_t curSize;
     size_t capacity;
@@ -159,7 +153,7 @@ struct backendContext_t {
 
     backendError_t errCode;
     char errMsg[BACKEND_ERR_MSG_LEN];
-}
+};
 
 size_t INIT_LABELS_ARR_CAPACITY = 64;
 size_t INIT_LABEL_PATCH_OFFSETS_CAPACITY = 16;

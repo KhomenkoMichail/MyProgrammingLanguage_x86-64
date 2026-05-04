@@ -5,28 +5,28 @@
 #include "../include/structAccessFunctions.h"
 
 
-bool* regIsUsed (regInfo_t* regInfoArr, regCode_t regCode) {
-    assert(regInfoArr);
+bool* regIsUsed (backendContext_t* cntxt, regCode_t regCode) {
+    assert(cntxt);
 
-    return &((regInfoArr[regCode]).isUsed);
+    return &((cntxt->regsArr[regCode]).isUsed);
 }
 
-bool regSaveDecl (regInfo_t* regInfoArr, regCode_t regCode) {
-    assert(regInfoArr);
+bool regSaveDecl (backendContext_t* cntxt, regCode_t regCode) {
+    assert(cntxt);
 
-    return (regInfoArr[regCode]).regSaveDecl;
+    return ((cntxt->regsArr[regCode]).regSaveDecl);
 }
 
-const char* regName (regInfo_t* regInfoArr, regCode_t regCode) {
-    assert(regInfoArr);
+const char* regName (backendContext_t* cntxt, regCode_t regCode) {
+    assert(cntxt);
 
-    return (regInfoArr[regCode]).name;
+    return (cntxt->regsArr[regCode]).name;
 }
 
-bool* regWasPushed (regInfo_t* regInfoArr, regCode_t regCode) {
-    assert(regInfoArr);
+bool* regWasPushed (backendContext_t* cntxt, regCode_t regCode) {
+    assert(cntxt);
 
-    return &((regInfoArr[regCode]).wasPushed);
+    return &((cntxt->regsArr[regCode]).wasPushed);
 }
 
 int* varOffset (identifierInfo* varInfo) {
@@ -139,14 +139,14 @@ size_t* labelVectorCapacity (labelVector_t* labelVec) {
     return &(labelVec->capacity);
 }
 
-label_t** lableVectorArr (labelVector_t* labelVec) {
+label_t** labelVectorArr (labelVector_t* labelVec) {
     assert(labelVec);
     return &(labelVec->labelArr);
 }
 
-label_t* getLable (labelVector_t* labelVec, size_t lableNum) {
+label_t* getLabel (labelVector_t* labelVec, size_t labelNum) {
     assert(labelVec);
-    return &((labelVec->labelArr)[lableNum]);
+    return &((labelVec->labelArr)[labelNum]);
 }
 
 const char** labelName (label_t* label) {

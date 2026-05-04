@@ -15,6 +15,10 @@ enum idType_t {
 
 struct funcInfo_t {
     size_t paramCount;
+
+    size_t numOfLocalVars;
+
+    bool isBodyNode;
     int haveBody;
 };
 
