@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "../../COMMON/include/nameTableConsts.h"
 #include "../../COMMON/include/structsAndConsts.h"
@@ -20,7 +22,7 @@ node_t* syntaxError (tree_t* tree, node_t** nodeArr, size_t* curNodeNum, const c
 
     printf("Func %s detected a syntax error!\n", funcName);
 
-    printf ("In line : %lld ", (nodeArr[*curNodeNum])->numOfLine);
+    printf ("In line : %ld ", (nodeArr[*curNodeNum])->numOfLine);
     switch ((nodeArr[*curNodeNum])->type) {
         case typeOperator:
             printf("operator {%d}\n", ((nodeArr[*curNodeNum])->value).opCode);
@@ -160,7 +162,7 @@ node_t* getFunction (tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     if(!(*nodeRight(funcNode)))
         return NULL;
 
-    *nodeFuncIsBodyNode(funcNode) = true;
+    setNodeIsFuncBody(funcNode);
     *nodeFuncNumOfLocalVars(funcNode) = *curScopeNumOfLocalVars(tree);
     exitScope(tree);
 

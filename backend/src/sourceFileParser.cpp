@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdint.h>
+#include <unistd.h>
 
 #include "../../COMMON/include/structsAndConsts.h"
 #include "../../COMMON/include/structAccessFunctions.h"
@@ -22,7 +24,7 @@ char* copyFileContent (sourceFile_t* srcFile, const char* fileName) {
         return NULL;
     }
 
-    unsigned int sizeOfFile = getSizeOfFile(fileDescriptor);
+    long int sizeOfFile = getSizeOfFile(fileDescriptor);
     if (sizeOfFile < 1) {
         close(fileDescriptor);
         return NULL;
@@ -33,7 +35,7 @@ char* copyFileContent (sourceFile_t* srcFile, const char* fileName) {
     size_t numOfReadSymbols = read(fileDescriptor, fileCopyBuffer, sizeOfFile);
     fileCopyBuffer[numOfReadSymbols] = '\0';
 
-    if(close(fileDescriptor) != 0) {
+    if (close(fileDescriptor) != 0) {
         fprintf(stderr, "Error of closing file \"%s\"", fileName);
         perror("");
         return NULL;
@@ -152,7 +154,6 @@ void fprintfCommentsToAsm (node_t* node, sourceFile_t* srcFile, FILE* asmFile) {
         if(numOfLine < srcFile->numberOfStrings)
             fprintf(asmFile, ";         %s\n", ((srcFile->arrOfStringStructs)[numOfLine]).ptrToString);
     fprintf(asmFile, ";-----------------------------------------------------------\n");
-
-
     fprintf(asmFile, "\n\n");
+    fprintf(asmFile, "int3                              ; breackPoint\n");
 }

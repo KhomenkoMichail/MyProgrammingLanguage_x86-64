@@ -29,7 +29,7 @@ int rewriteIdNodeToAsmCode(backendContext_t* cntxt, node_t* node, resultReg_t re
 
 int rewriteFuncBodyToAsmCode(backendContext_t* cntxt, node_t* node);
 
-int fprintfGettingParamsToAsmCode (backendContext_t* cntxt, node_t* node, FILE* asmFile);
+int fprintfGettingParamsToAsmCode (backendContext_t* cntxt, node_t* node);
 
 int rewriteFuncCallNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
@@ -37,7 +37,7 @@ int fprintfPassingParams (backendContext_t* cntxt, node_t* node);
 
 int rewriteVarAddressToAsmCode(backendContext_t* cntxt, node_t* node);
 
-void rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
+int rewriteVarNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
 int findFreeReg (backendContext_t* cntxt);
 

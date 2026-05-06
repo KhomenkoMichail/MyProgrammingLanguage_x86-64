@@ -43,7 +43,9 @@ stdOut:
                         jns .isPositive
 
                         neg rax
+                        push rax
                         PUT_CHAR '-'
+                        pop rax
 
 .isPositive:
                         xor rcx, rcx                        ; rcx is a numCounter
@@ -122,9 +124,6 @@ stdIn:
 
 .nextChar:
                         movzx r9, byte [rsi]
-
-                        cmp r9b, '\n'
-                        je .processSign
 
                         cmp r9b, '0'
                         jl .processSign

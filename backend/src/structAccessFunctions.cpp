@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdint.h>
 
+#include "../../COMMON/include/structsAndConsts.h"
+
+#include "../include/sourceFileParser.h"
 #include "../include/backendConsts.h"
 #include "../include/structAccessFunctions.h"
 
@@ -11,7 +15,7 @@ bool* regIsUsed (backendContext_t* cntxt, regCode_t regCode) {
     return &((cntxt->regsArr[regCode]).isUsed);
 }
 
-bool regSaveDecl (backendContext_t* cntxt, regCode_t regCode) {
+regSaveDecl_t regSaveDecl (backendContext_t* cntxt, regCode_t regCode) {
     assert(cntxt);
 
     return ((cntxt->regsArr[regCode]).regSaveDecl);
@@ -21,16 +25,6 @@ const char* regName (backendContext_t* cntxt, regCode_t regCode) {
     assert(cntxt);
 
     return (cntxt->regsArr[regCode]).name;
-}
-
-int* varOffset (identifierInfo* varInfo) {
-    assert(varInfo);
-    return &(varInfo->idInfo.varInfo.varOffset);
-}
-
-int* varReg (identifierInfo* varInfo) {
-    assert(varInfo);
-    return &(varInfo->idInfo.varInfo.varReg);
 }
 
 sourceFile_t** cntxtSrcFile (backendContext_t* cntxt) {
@@ -55,17 +49,17 @@ tree_t** cntxtTree (backendContext_t* cntxt) {
 
 int** cntxtProgramBuf (backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt.programBuf.buf);
+    return &(cntxt->programBuf.buf);
 }
 
 size_t* cntxtProgramBufSize(backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt.programBuf.curSize);
+    return &(cntxt->programBuf.curSize);
 }
 
 size_t* cntxtProgramBufCapacity(backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt.programBuf.capacity);
+    return &(cntxt->programBuf.capacity);
 }
 
 regInfo_t** cntxtRegsArr (backendContext_t* cntxt) {
@@ -75,7 +69,7 @@ regInfo_t** cntxtRegsArr (backendContext_t* cntxt) {
 
 int* cntxtIfCounter (backendContext_t* cntxt) {
     assert(cntxt);
-    return &(cntxt->ifCounter)
+    return &(cntxt->ifCounter);
 }
 
 int* cntxtWhileCounter (backendContext_t* cntxt) {
@@ -163,5 +157,17 @@ intVector_t* labelPatchOffsets (label_t* label) {
     return &(label->patchOffsets);
 }
 
+backendErr_t* cntxtErrCode (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->errCode);
+};
 
+char* cntxtErrMessage (backendContext_t* cntxt) {
+    assert(cntxt);
+    return cntxt->errMsg;
+}
 
+labelVector_t* cntxtLabelVector (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->labelsArr);
+}

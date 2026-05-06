@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "../include/structsAndConsts.h"
@@ -42,21 +43,21 @@ void fprintfNode(node_t* node, FILE* file) {
             #include "../../COMMON/include/operatorsArray.h"
             (void)NUM_OF_OPERATORS;
 
-            fprintf (file, "%s:%lld ", (operatorsArray[(node->value).opCode]).opCLangName, *nodeLine(node));
+            fprintf (file, "%s:%ld ", (operatorsArray[(node->value).opCode]).opCLangName, *nodeLine(node));
             break;
         }
         case typeNumber:
-            fprintf (file, "%d:%lld ", (node->value).constValue, *nodeLine(node));
+            fprintf (file, "%d:%ld ", (node->value).constValue, *nodeLine(node));
             break;
         case typeIdentifier:
             if ((node->value).id.identifierHash == getStringHash(MAIN_FUNCTION)) {
                 if(!strcmp(MAIN_FUNCTION, (node->value).id.identifierName))
-                    fprintf (file, "main[%zu]:%lld ", *nodeFuncNumOfLocalVars(node), *nodeLine(node));
+                    fprintf (file, "main[%zu]:%ld ", *nodeFuncNumOfLocalVars(node), *nodeLine(node));
             }
-            else if (*nodeIsFuncBody(node))
-                fprintf (file, "%s[%zu]:%lld ", (node->value).id.identifierName, *nodeFuncNumOfLocalVars(node), *nodeLine(node));
+            else if (getNodeIsFuncBody(node))
+                fprintf (file, "%s[%zu]:%ld ", (node->value).id.identifierName, *nodeFuncNumOfLocalVars(node), *nodeLine(node));
             else
-                fprintf (file, "%s:%lld ", (node->value).id.identifierName, *nodeLine(node));
+                fprintf (file, "%s:%ld ", (node->value).id.identifierName, *nodeLine(node));
             break;
         case typeError:
         default:

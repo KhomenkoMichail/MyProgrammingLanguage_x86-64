@@ -3,13 +3,9 @@
 
 bool* regIsUsed (backendContext_t* cntxt, regCode_t regCode);
 
-bool regSaveDecl (backendContext_t* cntxt, regCode_t regCode);
+regSaveDecl_t regSaveDecl (backendContext_t* cntxt, regCode_t regCode);
 
 const char* regName (backendContext_t* cntxt, regCode_t regCode);
-
-int* varOffset (identifierInfo* varInfo);
-
-int* varReg (identifierInfo* varInfo);
 
 sourceFile_t** cntxtSrcFile (backendContext_t* cntxt);
 
@@ -62,5 +58,11 @@ size_t* labelAddress (label_t* label);
 unsigned long long* labelHash (label_t* label);
 
 intVector_t* labelPatchOffsets (label_t* label);
+
+backendErr_t* cntxtErrCode (backendContext_t* cntxt);
+
+char* cntxtErrMessage (backendContext_t* cntxt);
+
+labelVector_t* cntxtLabelVector (backendContext_t* cntxt);
 
 #endif

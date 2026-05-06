@@ -1,17 +1,17 @@
 #ifndef BACKEND_CONSTS_H
 #define BACKEND_CONSTS_H
 
-#define SET_ERR_AND_RETURN(cntxt, errCode, ...) do { \
+#define SET_ERR_AND_RETURN(cntxt, code, ...) do { \
     if (cntxt) { \
-        (cntxt)->errCode = errCode; \
+        (cntxt)->errCode = code; \
         snprintf((cntxt)->errMsg, sizeof((cntxt)->errMsg), __VA_ARGS__); \
     } \
-    return errCode; \
+    return code; \
 } while(0)
 
 enum backendErr_t {
-    BACKEND_SUCCESS = 0;
-    BACKEND_ERR_TREE_DUMP_CALLOC = 1;
+    BACKEND_SUCCESS = 0,
+    BACKEND_ERR_TREE_DUMP_CALLOC = 1,
     BACKEND_ERR_TREE_CALLOC = 2,
     BACKEND_ERR_CREATE_TREE = 3,
     BACKEND_ERR_REGS_ARR_CALLOC = 4,
@@ -22,6 +22,8 @@ enum backendErr_t {
     BACKEND_ERR_UNEXPECTED_OPCODE = 9,
     BACKEND_ERR_NO_RIGHT_NODE = 10,
     BACKEND_ERR_NO_LEFT_NODE = 11,
+    BACKEND_ERR_UNEXPECTED_NODE_TYPE = 12,
+    BACKEND_ERR_OPENING_ASM_FILE = 13
 };
 
 enum resultReg_t {
@@ -29,7 +31,7 @@ enum resultReg_t {
     RIGHT = 1,
 };
 
-const char* OP_REG_[2] = { "rax", "rbx" };
+const char* const OP_REG_[2] = { "rax", "rbx" };
 
 enum regCode_t {
     RAX = 0,
@@ -61,11 +63,11 @@ enum regSaveDecl_t {
 struct regInfo_t {
     const char* name;
     bool isUsed;
-    const regSaveDecl_t regSaveDecl;
+    regSaveDecl_t regSaveDecl;
 };
 
 const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
-                                      { "rbx", true,  calleeSaved  },
+                                      { "rbx", true,  specialSaved },
                                       { "rcx", false, callerSaved  },
                                       { "rdx", false, callerSaved  },
                                       { "rsp", true,  specialSaved },
@@ -81,7 +83,7 @@ const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
                                       { "r14", false, calleeSaved  },
                                       { "r15", false, calleeSaved  }, };
 
-const size_t NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
+const int NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
 
 enum opRegRegCode_t {
     ADD = 0x01,
@@ -117,7 +119,7 @@ struct label_t {
     const char* name;
     size_t address;
 
-    unsigned long hash;
+    unsigned long long hash;
     intVector_t patchOffsets;
 };
 
@@ -131,7 +133,7 @@ const int BACKEND_ERR_MSG_LEN = 256;
 const size_t INIT_PROGRAM_BUF_CAPASITY = 1024;
 
 struct backendContext_t {
-    file_t srcFile;
+    file_t asmFile;
     sourceFile_t* sourceFile;
 
     tree_t* tree;
@@ -150,11 +152,11 @@ struct backendContext_t {
 
     labelVector_t labelsArr;
 
-    backendError_t errCode;
+    backendErr_t errCode;
     char errMsg[BACKEND_ERR_MSG_LEN];
 };
 
-size_t INIT_LABELS_ARR_CAPACITY = 64;
-size_t INIT_LABEL_PATCH_OFFSETS_CAPACITY = 16;
+const size_t INIT_LABELS_ARR_CAPACITY = 64;
+const size_t INIT_LABEL_PATCH_OFFSETS_CAPACITY = 16;
 
 #endif

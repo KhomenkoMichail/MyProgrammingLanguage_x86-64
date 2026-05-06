@@ -2,9 +2,12 @@
 #include <assert.h>
 #include <strings.h>
 #include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 #include "../../COMMON/include/structsAndConsts.h"
-#include "../../COMMON/include/structAccessfunctions.h"
+#include "../../COMMON/include/structAccessFunctions.h"
 #include "../../COMMON/include/helpingFunctions.h"
 #include "../../COMMON/include/treeFunctions.h"
 
@@ -43,14 +46,14 @@ struct lexAnalysisResult* lexicalAnalysis (const char* nameOfProgramFile) {
         nodeType_t tokenType = getTokenType(&bufPos);
 
         if (tokenType == typeError) {
-            printf("ERROR! Unable to recognize token type in %s:%lld\n", nameOfProgramFile, curLine);
+            printf("ERROR! Unable to recognize token type in %s:%ld\n", nameOfProgramFile, curLine);
             return NULL;
         }
 
         nodeArray[numOfNodes] = processToken(&bufPos, tokenType, curLine);
 
         if (!(nodeArray[numOfNodes])) {
-            printf("ERROR! Unable to process token in %s:%lld\n", nameOfProgramFile, curLine);
+            printf("ERROR! Unable to process token in %s:%ld\n", nameOfProgramFile, curLine);
             return NULL;
         }
 
@@ -240,10 +243,10 @@ void fprintfLexAnalysisDump (FILE* dumpFile, char* bufPos, node_t** nodeArray, s
     assert(nodeArray);
 
     fprintf(dumpFile, "current buffer position: -->>%s\n", bufPos);
-    fprintf(dumpFile, "number of nodes == %lld\n", numOfNodes);
+    fprintf(dumpFile, "number of nodes == %ld\n", numOfNodes);
 
     for (size_t i = 0; i < numOfNodes; i++) {
-        fprintf (dumpFile, "[%lld] == ", i);
+        fprintf (dumpFile, "[%ld] == ", i);
         switch ((nodeArray[i])->type) {
             case typeOperator:
                 fprintf(dumpFile, "operator {%d}\n", ((nodeArray[i])->value).opCode);

@@ -1,22 +1,30 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
 
 #include "../../COMMON/include/structsAndConsts.h"
+#include "../../COMMON/include/treeFunctions.h"
+#include "../../COMMON/include/nameTableStack.h"
+#include "../../COMMON/include/readTreeFromFileFunc.h"
+#include "../../COMMON/include/structAccessFunctions.h"
 
-#include "../include/backendConsts.h"
-#include "../include/backendCntxtFuncs.h"
+
 #include "../include/sourceFileParser.h"
+#include "../include/backendConsts.h"
+#include "../include/structAccessFunctions.h"
+#include "../include/backendCntxtFuncs.h"
 
-int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* asmFileName, const char* srcFileName) {
+int backendCntxtCtor (backendContext_t* cntxt, const char* astFileName, const char* asmFileName, const char* srcFileName) {
     assert(cntxt);
-    assert(astFile);
+    assert(astFileName);
     assert(asmFileName);
     assert(srcFileName);
 
     *cntxtAsmFileName(cntxt) = asmFileName;
 
-    *cntxtSrcFile(cntxt) = (sourceFile*)calloc(1, sizeof(sourceFile));
+    *cntxtSrcFile(cntxt) = (sourceFile_t*)calloc(1, sizeof(sourceFile_t));
     if (!*cntxtSrcFile(cntxt)) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_SRC_FILE_STRUCT_CALLOC,
                         "Error src file struct calloc in func %s, %s:%d\n",
@@ -45,7 +53,7 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
 
 
     *cntxtAstCopyBuffer(cntxt) = readFileAndCreateTree(*cntxtTree(cntxt),
-                                                       *cntxtTreeDump(cntxt), astFile);
+                                                       *cntxtTreeDump(cntxt), astFileName);
     if(!(*cntxtAstCopyBuffer(cntxt))) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_CREATE_TREE,
                         "Error tree create in func %s, %s:%d\n",
@@ -69,10 +77,11 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFile, const char* 
                         "Error regs array calloc in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-    memcpy(*cntxtRegsArr(cntxt), INIT_REGS_ARRAY, sizeof(INIT_REGS_ARRAY));
 
+    for (int curReg = 0; curReg < NUM_OF_REGS; curReg++)
+        (*cntxtRegsArr(cntxt))[curReg] = INIT_REGS_ARRAY[curReg];
 
-    if (!labelVectorCtor(*cntxtLabelVector(cntxt), INIT_LABELS_ARR_CAPACITY)) {
+    if (!labelVectorCtor(cntxtLabelVector(cntxt), INIT_LABELS_ARR_CAPACITY)) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_LABELS_ARR_CTOR,
                         "Error labels array ctor in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
@@ -94,10 +103,10 @@ labelVector_t* labelVectorCtor (labelVector_t* newLabelVector, size_t initCapaci
     for (size_t numOfLabel = 0; numOfLabel < initCapacity; numOfLabel++) {
         label_t* curLabel = getLabel(newLabelVector, numOfLabel);
 
-        *intVectorCapacity(*(labelPatchOffsets(curLabel))) = INIT_LABEL_PATCH_OFFSETS_CAPACITY;
-        *intVectorBuf(*(labelPatchOffsets(curLabel))) = (int*)calloc(INIT_LABEL_PATCH_OFFSETS_CAPACITY, sizeof(int));
+        *intVectorCapacity(labelPatchOffsets(curLabel)) = INIT_LABEL_PATCH_OFFSETS_CAPACITY;
+        *intVectorBuf(labelPatchOffsets(curLabel)) = (int*)calloc(INIT_LABEL_PATCH_OFFSETS_CAPACITY, sizeof(int));
 
-        if (!(*intVectorBuf(*labelPatchOffsets(curLabel))))
+        if (!(*intVectorBuf(labelPatchOffsets(curLabel))))
             return NULL;
     }
 
@@ -113,8 +122,8 @@ void labelVectorDtor (labelVector_t* labelVector) {
         //if (*labelName(curLabel))           //FIXME ??
         //    free(*labelName(curLabel));
 
-        if (*intVectorBuf(*labelPatchOffsets(curLabel)))
-            free(*intVectorBuf(*labelPatchOffsets(curLabel)));
+        if (*intVectorBuf(labelPatchOffsets(curLabel)))
+            free(*intVectorBuf(labelPatchOffsets(curLabel)));
     }
 
     free(*labelVectorArr(labelVector));
@@ -144,6 +153,18 @@ void backendCntxtDtor (backendContext_t* cntxt) {
     if (*cntxtRegsArr(cntxt))
         free(*cntxtRegsArr(cntxt));
 
-    if (*cntxtLabelsArr(cntxt))
-        labelVectorDtor(*cntxtLabelsArr(cntxt));
+    if (cntxtLabelsArr(cntxt))
+        labelVectorDtor(cntxtLabelsArr(cntxt));
+}
+
+void reportBackendError(backendContext_t* cntxt) {
+    assert(cntxt);
+
+    if (*cntxtErrCode(cntxt) == BACKEND_SUCCESS) return;
+
+    fprintf(stderr, "\n--- BACKEND ERROR ---\n");
+    fprintf(stderr, "ErrCode: %d\n", *cntxtErrCode(cntxt));
+
+    fprintf(stderr, "Message: %s\n", cntxtErrMessage(cntxt));
+    fprintf(stderr, "-----------------------\n");
 }

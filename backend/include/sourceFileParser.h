@@ -6,7 +6,7 @@ struct line {
     size_t lengthOfString;
 };
 
-struct sourceFile {
+struct sourceFile_t {
     char* text;
     struct line* arrOfStringStructs;
     size_t sizeOfText;

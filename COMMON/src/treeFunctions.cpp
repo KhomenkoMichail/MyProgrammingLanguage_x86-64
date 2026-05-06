@@ -1,7 +1,7 @@
-#include <TXLib.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cstdint>
 
 #pragma GCC diagnostic ignored "-Wredundant-tags"
 
@@ -100,11 +100,11 @@ int fprintfNodeGraph (node_t* node, int rank, FILE* graphFile, size_t* nodesPass
                 node, rank, typeName, (nodeValue(node))->constValue);
 
     node_t** left = nodeLeft(node);
-    if((left != NULL) && (*left != NULL) && !(_txIsBadReadPtr(*left)))
+    if((left != NULL) && (*left != NULL))                 //NOTE
         fprintfNodeGraph(*nodeLeft(node), rank + 1, graphFile, nodesPassed, treeSize);
 
     node_t** right = nodeRight(node);
-    if((right != NULL) && (*right != NULL) && !(_txIsBadReadPtr(*right)))
+    if((right != NULL) && (*right != NULL) )                //NOTE
         fprintfNodeGraph(*nodeRight(node), rank + 1, graphFile, nodesPassed, treeSize);
 
     return 0;
@@ -119,24 +119,24 @@ int fprintfNodeLinksForGraph (node_t* node, FILE* graphFile, size_t* nodesPassed
     //    return tooManyRecursiveCalls;
 
     node_t** left = nodeLeft(node);
-    if((left != NULL) && (*left != NULL) && !(_txIsBadReadPtr(*left))) {
+    if((left != NULL) && (*left != NULL)) {                           //NOTE
         fprintf(graphFile, "    node0x%p:left -> node0x%p:addr [color = \"#666350ff\"];\n", node, *nodeLeft(node));
         fprintfNodeLinksForGraph(*nodeLeft(node), graphFile, nodesPassed, treeSize);
     }
 
-    if((left != NULL) && (*left != NULL) && (_txIsBadReadPtr(*left))) {
+    if((left != NULL) && (*left != NULL)) {     //NOTE
         fprintf(graphFile, "    errorNode0x%p [label = \"ERROR!\\n 0x%p \", style = filled, fillcolor = \"#be3131ff\", color = black, fontcolor = white, shape = doubleoctagon];\n",
                 *left, *left);
         fprintf(graphFile, "    node0x%p:left -> errorNode0x%p [color = \"#f90d0dff\"];\n", node, *left);
     }
 
     node_t** right = nodeRight(node);
-    if((right != NULL) && (*right != NULL) && !(_txIsBadReadPtr(*right))) {
+    if((right != NULL) && (*right != NULL)) {       //NOTE
         fprintf(graphFile, "    node0x%p:right -> node0x%p:addr [color = \"#666350ff\"];\n", node, *nodeRight(node));
         fprintfNodeLinksForGraph(*nodeRight(node), graphFile, nodesPassed, treeSize);
     }
 
-    if((right != NULL) && (*right != NULL) && (_txIsBadReadPtr(*right))) {
+    if((right != NULL) && (*right != NULL)) {      //NOTE
         fprintf(graphFile, "    errorNode0x%p [label = \"ERROR!\\n 0x%p \", style = filled, fillcolor = \"#be3131ff\", color = black, fontcolor = white, shape = doubleoctagon];\n",
                 *right, *right);
         fprintf(graphFile, "    node0x%p:right -> errorNode0x%p [color = \"#f90d0dff\"];\n", node, *right);
@@ -174,14 +174,8 @@ void treeDump (struct tree_t* tree, struct dump* dumpInfo, const char* message) 
     fprintfTreeErrorsForDump (tree, dumpFile, dumpInfo);
 
     fprintf(dumpFile, "Root Node == 0x%p\n", *treeRoot(tree));
-    fprintf(dumpFile, "Tree size == %llu\n", *treeSize(tree));
+    fprintf(dumpFile, "Tree size == %lu\n", *treeSize(tree));
     fprintf(dumpFile, "ErrorCode == %d\n", tree->errorCode);
-
-    //fprintf(dumpFile, "number of variables == %llu\n", tree->identifierArrSize);
-    //for (size_t numOfVar = 0; numOfVar < tree->identifierArrSize; numOfVar++)
-    //    fprintf(dumpFile, "var[%llu] == \"%s\"; value == [%lf]; hash == %llu\n", numOfVar,
-    //    (tree->identifierArr[numOfVar]).identifierName, (tree->identifierArr[numOfVar]).identifierValue,
-    //    (tree->identifierArr[numOfVar]).identifierHash);
 
     createGraphImageForDump (tree, dumpFile, nameOfTextGraphFile);
 
@@ -212,20 +206,16 @@ void createGraphImageForDump (struct tree_t* tree, FILE* dumpFile, const char* n
 int nodeVerifier (node_t* node, int* errorCode, size_t* nodesPassed, size_t treeSize) {
     assert(node);
 
-    //(*nodesPassed) += 1;
-    //if (*nodesPassed > treeSize)
-    //    return tooManyRecursiveCalls;
-
-    if (_txIsBadReadPtr(*nodeRight(node)) && (*nodeRight(node) != NULL))
+    if (*nodeRight(node) != NULL)     //NOTE
         (*errorCode) |= badRight;
 
-    if (_txIsBadReadPtr(*nodeLeft(node)) && (*nodeLeft(node) != NULL))
+    if (*nodeLeft(node) != NULL)        //NOTE
         (*errorCode) |= badLeft;
 
-    if  (!(_txIsBadReadPtr(*nodeRight(node))) && (*nodeRight(node)) != NULL)
+    if  (*nodeRight(node) != NULL) //NOTE
         nodeVerifier(*nodeRight(node), errorCode, nodesPassed, treeSize);
 
-    if  (!(_txIsBadReadPtr(*nodeLeft(node))) && (*nodeLeft(node)) != NULL)
+    if  (*nodeLeft(node) != NULL)    //NOTE
         nodeVerifier(*nodeLeft(node), errorCode, nodesPassed, treeSize);
 
     return (*errorCode);
@@ -274,13 +264,11 @@ int deleteNode(tree_t* tree, node_t* node) {
     assert(tree);
 
     node_t** left = nodeLeft(node);
-    if((left != NULL) && (*left != NULL)
-        && !(_txIsBadReadPtr(*left)))
+    if((left != NULL) && (*left != NULL))           //NOTE
         deleteNode(tree, *nodeLeft(node));
 
     node_t** right = nodeRight(node);
-    if((right != NULL) && (*right != NULL)
-        && !(_txIsBadReadPtr(*right)))
+    if((right != NULL) && (*right != NULL))         //NOTE
         deleteNode(tree, *nodeRight(node));
 
     free(node);

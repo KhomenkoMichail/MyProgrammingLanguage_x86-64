@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 
 #include "../../COMMON/include/structsAndConsts.h"
 #include "../../COMMON/include/structAccessFunctions.h"

@@ -1,9 +1,10 @@
-#include <TXLib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <typeinfo>
 #include <errno.h>
+#include <stdint.h>
+#include <string.h>
 
 #pragma GCC diagnostic ignored "-Wredundant-tags"
 
@@ -11,6 +12,7 @@
 #include "../include/structsAndConsts.h"
 #include "../include/nameTableStack.h"
 #include "../include/helpingFunctions.h"
+#include "../include/structAccessFunctions.h"
 
 int stackCtor (stack_t* stack, ssize_t capacity, const char* nameOfStack, struct info creationInfo) {
     assert(stack);
@@ -102,7 +104,7 @@ nameTable_t* nameTableCtor (size_t capacity) {
 
     newTable->capacity = capacity;
     newTable->size = 0;
-    newTable->numOfVars = 0;
+    newTable->numOfLocalVars = 0;
 
     return newTable;
 }
@@ -228,7 +230,7 @@ identifierInfo* addIdToCurrentScope(tree_t* tree, char* name, idType_t idType) {
 
     if (idType == idPARAM) {
         currentTable->numOfParams += 1;
-        *varOffset(newID) = (currentTable->numOfParams) * 8;
+        *varOffset(newID) = (currentTable->numOfParams + 1) * 8;
         *varReg(newID) = NOT_IN_REG;
     }
 

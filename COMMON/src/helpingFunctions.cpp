@@ -4,6 +4,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <math.h>
+#include <stdint.h>
+#include <unistd.h>
 
 #include "../include/structsAndConsts.h"
 #include "../include/helpingFunctions.h"
@@ -19,7 +21,7 @@ char* copyFileContent (const char* nameOfFile) {
         return NULL;
     }
 
-    unsigned int sizeOfFile = getSizeOfFile(fileDescriptor);
+    long int sizeOfFile = getSizeOfFile(fileDescriptor);
     if (sizeOfFile == 0) {
         close(fileDescriptor);
         return NULL;
@@ -30,7 +32,7 @@ char* copyFileContent (const char* nameOfFile) {
     size_t numOfReadSymbols = read(fileDescriptor, fileCopyBuffer, sizeOfFile);
     fileCopyBuffer[numOfReadSymbols] = '\0';
 
-    if(close(fileDescriptor) != 0) {
+    if (close(fileDescriptor) != 0) {
         fprintf(stderr, "Error of closing file \"%s\"", nameOfFile);
         perror("");
         return NULL;
@@ -39,7 +41,7 @@ char* copyFileContent (const char* nameOfFile) {
     return fileCopyBuffer;
 }
 
-unsigned int getSizeOfFile (int fileDescriptor) {
+long int getSizeOfFile (int fileDescriptor) {
     struct stat fileInfo = {};
 
     if (fstat(fileDescriptor, &fileInfo) == 0)
@@ -116,7 +118,7 @@ size_t getSize_t (void) {
     size_t num = 0;
     char ch1 = '\0';
 
-    while ((scanf ("%llu%c", &num, &ch1) != 2) || (ch1 != '\n')) {
+    while ((scanf ("%lu%c", &num, &ch1) != 2) || (ch1 != '\n')) {
 
         putchar(ch1);
         while ((ch = getchar()) != '\n')
