@@ -1,3 +1,4 @@
+BITS 64
 %macro PUT_CHAR 1
     mov al, %1
     stosb

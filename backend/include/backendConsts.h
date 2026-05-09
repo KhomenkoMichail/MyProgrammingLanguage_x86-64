@@ -23,7 +23,10 @@ enum backendErr_t {
     BACKEND_ERR_NO_RIGHT_NODE = 10,
     BACKEND_ERR_NO_LEFT_NODE = 11,
     BACKEND_ERR_UNEXPECTED_NODE_TYPE = 12,
-    BACKEND_ERR_OPENING_ASM_FILE = 13
+    BACKEND_ERR_OPENING_ASM_FILE = 13,
+    BACKEND_ERR_LABELS_ARR_REALLOC = 14,
+    BACKEND_ERR_PATCH_ARR_REALLOC = 15,
+    BACKEND_ERR_PROGRAM_BUF_REALLOC = 16,
 };
 
 enum resultReg_t {
@@ -34,6 +37,7 @@ enum resultReg_t {
 const char* const OP_REG_[2] = { "rax", "rbx" };
 
 enum regCode_t {
+    NO_REG = -1,
     RAX = 0,
     RBX = 1,
     RCX = 2,
@@ -85,13 +89,48 @@ const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
 
 const int NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
 
-enum opRegRegCode_t {
-    ADD = 0x01,
-    SUB = 0x28,
-    CMP = 0x39,
-    TEST = 0x85,
-    IMUL = 0xAF,
+enum opCode_t {
+    opCodeADD = 0x01,
+    opCodeSUB = 0x29,
+    opCodeCMP = 0x39,
+    opCodeTEST = 0x85,
+    opCodeIMUL = 0xAF,
+    opCodeJZ = 0x84,
+    opCodeRET = 0xC3,
+    opCodeCQO = 0x99,
+    opCodePUSH = 0x50,
+    opCodePOP = 0x58,
+    opCodeIMUL = 0xAF,
+    opCodeIDIV = 0xF7,
+    opCodeMOVsetDir = 0x8B,
+    opCodeMOVcleanDir = 0x89,
+    opCodeMOVregConst = 0xB8,
+    opCodeJMP = 0xE9,
+    opCodeSETe = 0x94,
+    opCodeSETne = 0x95,
+    opCodeSETl = 0x9C,
+    opCodeSETg = 0x9F,
+    opCodeSETle = 0x9E,
+    opCodeSETge = 0x9D,
+    opCodeMOVZXrr8 = 0xB6,
+    opCodeCALL = 0xE8,
+    opCodeCVTSI2SD = 0x2A,
+    opCodeSQRTSD = 0x51,
+    opCodeCVVTSD2SI = 0x2C,
 };
+
+enum aluOpCode_t {
+    aluADD = 0,
+    aluSUB = 5,
+};
+
+const uint8_t ESCAPE_PREFIX = 0x0F;
+const uint8_t DOUBLE_PRECISION_PREFIX = 0xF2
+const uint8_t REX_W_BYTE = 0x48;
+const uint8_t XMM0_CODE = 0x00;
+
+const int IDIV_EXTRA_OPCODE = 0x07;
+const int NO_INDEX_REG = 0x04;
 
 enum modARGS_t {
     MEM_NO_OFFSET = 0x00,
@@ -117,10 +156,12 @@ struct intVector_t {
 
 struct label_t {
     const char* name;
+
+    bool hasAddress;
     size_t address;
 
     unsigned long long hash;
-    intVector_t patchOffsets;
+    intVector_t patchAddresses;
 };
 
 struct labelVector_t {
@@ -157,6 +198,18 @@ struct backendContext_t {
 };
 
 const size_t INIT_LABELS_ARR_CAPACITY = 64;
-const size_t INIT_LABEL_PATCH_OFFSETS_CAPACITY = 16;
+const size_t INIT_LABEL_PATCH_ADDRESSES_CAPACITY = 16;
+
+const int64_t NO_DESP = 0xBADBABE;
+
+union varAddrComp_t {
+    regCode_t regCode;
+    int rbpOffset;
+};
+
+struct varPos_t {
+    bool inReg;
+    varAddrComp_t varrAddrComp;
+};
 
 #endif

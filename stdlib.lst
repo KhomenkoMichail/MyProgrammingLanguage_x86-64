@@ -1,0 +1,163 @@
+     1                                  BITS 64
+     2                                  %macro PUT_CHAR 1
+     3                                      mov al, %1
+     4                                      stosb
+     5                                      inc r11
+     6                                  %endmacro
+     7                                  
+     8                                  INT_MAX_LEN EQU 21
+     9                                  
+    10                                  section .text
+    11                                  ;----------------------------------------------------------------------------------------------
+    12                                  ;Exit the program.
+    13                                  ;----------------------------------------------------------------------------------------------
+    14                                  stdExit:
+    15 00000000 B83C000000                                      mov rax, 60
+    16 00000005 4831FF                                          xor rdi, rdi
+    17 00000008 0F05                                            syscall
+    18                                  
+    19                                  ;----------------------------------------------------------------------------------------------
+    20                                  ;Outputs a number in decimal notation.
+    21                                  ;Entry: rax = output number
+    22                                  ;Exit:
+    23                                  ;Expected:
+    24                                  ;Destroyed: rax, rcx, rdx, rdi, rsi, r9, r11
+    25                                  ;----------------------------------------------------------------------------------------------
+    26                                  stdOut:
+    27 0000000A 55                                              push rbp
+    28 0000000B 4889E5                                          mov rbp, rsp
+    29 0000000E FC                                              cld
+    30                                  
+    31 0000000F 4883EC15                                        sub rsp, INT_MAX_LEN
+    32 00000013 4889E7                                          mov rdi, rsp
+    33                                  
+    34 00000016 4D31DB                                          xor r11, r11                        ; curBufSize
+    35                                  
+    36 00000019 4885C0                                          test rax, rax
+    37 0000001C 7508                                            jnz .notZero
+    38                                  
+    39                                                          PUT_CHAR '0'
+     3 0000001E B030                <1>  mov al, %1
+     4 00000020 AA                  <1>  stosb
+     5 00000021 49FFC3              <1>  inc r11
+    40 00000024 EB39                                            jmp .end
+    41                                  
+    42                                  .notZero:
+    43 00000026 4885C0                                          test rax, rax
+    44 00000029 790B                                            jns .isPositive
+    45                                  
+    46 0000002B 48F7D8                                          neg rax
+    47 0000002E 50                                              push rax
+    48                                                          PUT_CHAR '-'
+     3 0000002F B02D                <1>  mov al, %1
+     4 00000031 AA                  <1>  stosb
+     5 00000032 49FFC3              <1>  inc r11
+    49 00000035 58                                              pop rax
+    50                                  
+    51                                  .isPositive:
+    52 00000036 4831C9                                          xor rcx, rcx                        ; rcx is a numCounter
+    53 00000039 41B90A000000                                    mov r9, 10                          ; divider
+    54                                  
+    55                                  .nextNum:
+    56 0000003F 4831D2                                          xor rdx, rdx
+    57 00000042 49F7F1                                          div r9
+    58                                  
+    59 00000045 52                                              push rdx                            ; push remainder
+    60 00000046 48FFC1                                          inc rcx
+    61                                  
+    62 00000049 4885C0                                          test rax, rax                       ; while (quotient  != 0)
+    63 0000004C 75F1                                            jnz .nextNum
+    64                                  
+    65                                  
+    66                                  .printNum:
+    67 0000004E 58                                              pop rax                             ; pop remainder
+    68 0000004F 0430                                            add al, '0'                         ; num to ASCII
+    69                                                          PUT_CHAR al
+     3 00000051 88C0                <1>  mov al, %1
+     4 00000053 AA                  <1>  stosb
+     5 00000054 49FFC3              <1>  inc r11
+    70                                  
+    71 00000057 48FFC9                                          dec rcx                             ; numCounter--
+    72 0000005A 4885C9                                          test rcx, rcx
+    73 0000005D 75EF                                            jnz .printNum
+    74                                  
+    75                                  .end:
+    76                                  
+    77 0000005F B801000000                                      mov rax, 1                                 ; write
+    78 00000064 BF01000000                                      mov rdi, 1                                 ; stdout
+    79                                  
+    80 00000069 488D75EB                                        lea rsi, [rbp - INT_MAX_LEN]               ; buffer address
+    81 0000006D 4C89DA                                          mov rdx, r11                               ; buffer size
+    82 00000070 0F05                                            syscall
+    83                                  
+    84 00000072 4889EC                                          mov rsp, rbp
+    85 00000075 5D                                              pop rbp
+    86 00000076 C3                                              ret
+    87                                  
+    88                                  ;----------------------------------------------------------------------------------------------
+    89                                  ;Assigns the decimal number read from stdin to the RAX register.
+    90                                  ;Entry:
+    91                                  ;Exit: rax = entered number
+    92                                  ;Expected:
+    93                                  ;Destroyed: rax, rcx, rdx, rdi, rsi, r8, r9
+    94                                  ;----------------------------------------------------------------------------------------------
+    95                                  stdIn:
+    96 00000077 55                                              push rbp
+    97 00000078 4889E5                                          mov rbp, rsp
+    98                                  
+    99 0000007B 4883EC15                                        sub rsp, INT_MAX_LEN
+   100                                  
+   101 0000007F B800000000                                      mov rax, 0                ; read
+   102 00000084 BF00000000                                      mov rdi, 0                ; stdin
+   103 00000089 4889E6                                          mov rsi, rsp              ; buffer address
+   104 0000008C BA15000000                                      mov rdx, INT_MAX_LEN      ; bufferSize
+   105 00000091 0F05                                            syscall
+   106                                  
+   107 00000093 4885C0                                          test rax, rax
+   108 00000096 7E54                                            jle .error
+   109                                  
+   110 00000098 4889E6                                          mov rsi, rsp        ; buffer
+   111 0000009B 4889C1                                          mov rcx, rax        ; numLen
+   112 0000009E 4831C0                                          xor rax, rax        ; result
+   113                                  
+   114 000000A1 4D31C0                                          xor r8, r8          ; numSign
+   115 000000A4 BA0A000000                                      mov rdx, 10
+   116                                  
+   117 000000A9 803E2D                                          cmp byte [rsi], '-'
+   118 000000AC 7511                                            jne .nextChar
+   119 000000AE 41B801000000                                    mov r8, 1
+   120 000000B4 48FFC6                                          inc rsi
+   121 000000B7 48FFC9                                          dec rcx
+   122                                  
+   123 000000BA 4885C9                                          test rcx, rcx
+   124 000000BD 7428                                            jz .exit
+   125                                  
+   126                                  .nextChar:
+   127 000000BF 4C0FB60E                                        movzx r9, byte [rsi]
+   128                                  
+   129 000000C3 4180F930                                        cmp r9b, '0'
+   130 000000C7 7C16                                            jl .processSign
+   131 000000C9 4180F939                                        cmp r9b, '9'
+   132 000000CD 7F10                                            jg .processSign
+   133                                  
+   134 000000CF 4180E930                                        sub r9b, '0'
+   135 000000D3 480FAFC2                                        imul rax, rdx
+   136 000000D7 4C01C8                                          add rax, r9
+   137                                  
+   138 000000DA 48FFC6                                          inc rsi
+   139 000000DD E2E0                                            loop .nextChar
+   140                                  
+   141                                  
+   142                                  .processSign:
+   143 000000DF 4D85C0                                          test r8, r8
+   144 000000E2 7403                                            jz .exit
+   145 000000E4 48F7D8                                          neg rax
+   146                                  
+   147                                  .exit:
+   148 000000E7 4889EC                                          mov rsp, rbp
+   149 000000EA 5D                                              pop rbp
+   150 000000EB C3                                              ret
+   151                                  
+   152                                  .error:
+   153 000000EC 4831C0                                          xor rax, rax
+   154 000000EF EBF6                                            jmp .exit

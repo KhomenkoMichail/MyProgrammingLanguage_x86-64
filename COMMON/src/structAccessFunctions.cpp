@@ -124,3 +124,13 @@ idType_t* infoIdType (identifierInfo* idStruct) {
     assert(idStruct);
     return &(idStruct->idType);
 }
+
+char** nodeIdentifierName (node_t* node) {
+    assert(node);
+    return &(node->value.id.identifierName);
+}
+
+operatorCode_t* nodeOpCode (node_t* node) {
+    assert(node);
+    return &(node->value.opCode);
+}

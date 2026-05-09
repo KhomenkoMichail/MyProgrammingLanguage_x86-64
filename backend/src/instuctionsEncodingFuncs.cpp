@@ -6,7 +6,7 @@
 
 int emitByte(programBuf, uint8_t byte) {
     assert(programBuf);
-
+                                                        //FIXME
     if (buf->size < buf->capacity) {
         buf->code[buf->size++] = byte;
     } else {
@@ -42,116 +42,76 @@ int emitSIB (backendContext_t* cntxt, uint8_t scale, regCode_t indexReg, regCode
     emit_byte(buf, SIB);
 }
 
-static inline int emit_u32(backendContext_t* cntxt, uint32_t value) {
+int emit_32CurPos (backendContext_t* cntxt, int32_t value) {
     assert(cntxt);
-
-    *(uint32_t*)(buf->code + buf->size) = value;
-    buf->size += 4;
+                                                                    //FIXME
+    *(int32_t*)(*cntxtProgramBuf(cntxt) + *cntxtProgramBufSize(cntxt)) = value;
+    *cntxtProgramBufSize(cntxt) += sizeof(int32_t);
 }
+
+int emit_32givenPos (backendContext_t* cntxt, size_t givenBufPos, uint32_t value) {
+    assert(cntxt);
+                                                                    //FIXME
+    *(int32_t*)(*cntxtProgramBuf(cntxt) + givenBufPos) = value;
+    *cntxtProgramBufSize(cntxt) = (givenBufPos + sizeof(int32_t) > *cntxtProgramBufSize(cntxt))?
+                                   givenBufPos + sizeof(int32_t) :  *cntxtProgramBufSize(cntxt);
+}
+
 
 int emitRet (backendContext_t* cntxt) {
     assert(cntxt);
-    emit_byte(buf, 0xC3);
+    emit_byte(buf, opCodeRET);
 }
 
 int emitCqo(backendContext_t* cntxt) {
     assert(backendContext_t* cntxt)
 
-    emitByte(cntxt, 0x48);
-    emitByte(cntxt, 0x99);
+    emitByte(cntxt, REX_W_BYTE);
+    emitByte(cntxt, opCodeCQO);
 }
 
 int emitPushReg(backendContext_t* cntxt, regCode_t regCode) {
     assert(cntxt);
-    emitByte(cntxt, 0x50 + regCode);
+    emitByte(cntxt, opCodePUSH + regCode);
 }
 
 int emitPopReg(backendContext_t* cntxt, regCode_t regCode) {
     assert(cntxt);
-    emitByte(cntxt, 0x58 + regCode);
+    emitByte(cntxt, opCodePOP + regCode);
 }
 
-int emitOpRegReg (backendContext_t* cntxt, opRegRegCode_t opCode, regCode_t destReg, regCode_t srcReg) {
-    assert(cntxt);
-
-    emitRex64(cntxt, destReg, srcReg, NO_REG);
-
-    if (opCode == IMUL) {
-        emitByte(cntxt, 0x0F);
-        emitModRM(cntxt, REG_REG, destReg, srcReg);
-    }
-    else {
-        emitByte(cntxt, opCode);
-        emitModRM(cntxt, REG_REG, srcReg, destReg);
-    }
-}
-
-int emitOpRegReg(backendContext_t* cntxt, opRegRegCode_t opCode, regCode_t destReg, regCode_t srcReg) {
+int emitOpRegReg(backendContext_t* cntxt, opCode_t opCode, regCode_t destReg, regCode_t srcReg) {
     assert(cntxt);
 
     if (opCode == IMUL) {
         emitRex64(cntxt, destReg, srcReg, NO_REG);
-        emitByte(cntxt, 0x0F);
-        emitByte(cntxt, 0xAF);
+        emitByte(cntxt, ESCAPE_PREFIX);
+        emitByte(cntxt, opCodeIMUL);
         emitModRM(cntxt, REG_REG, destReg, srcReg);
-    } else {
+    }
+    else {
         emitRex64(cntxt, srcReg, destReg, NO_REG);
         emitByte(cntxt, (uint8_t)opCode);
         emitModRM(cntxt, REG_REG, srcReg, destReg);
     }
-    return 0;
+    return BACKEND_SUCCESS;
 }
 
 int emitIdiv (backendContext_t* cntxt, regCode_t srcReg) {
     assert(cntxt);
 
     emitRex64(cntxt, NO_REG, srcReg, NO_REG);
-    emitByte(cntxt, 0xF7);
-    emitModRM(cntxt, REG_REG, 0x07, srcReg);
+    emitByte(cntxt, opCodeIDIV);
+    emitModRM(cntxt, REG_REG, IDIV_EXTRA_OPCODE, srcReg);
 }
 
-int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCode_t srcReg, int32_t disp) {
-    assert(cntxt);
-
-    bool direction = (modARGS == MEM_REG) || (modARGS == REG_REG);
-
-    uint8_t movOpCode = (direction) ? 0x8B: 0x89;
-    movOpCode = (modARGS == REG_CONST) ? movOpCode + destReg: movOpCode;
-
-    if (modARGS != REG_REG && modARGS != REG_CONST) {
-        modARGS = (disp || (baseReg & 7) == RBP) ? modARGS : MEM_NO_OFFSET;
-        modARGS = (disp >= -128 && disp <= 127) ? MEM_32_OFFSET : MEM_8_OFFSET;
-    }
-
-    emitRex64(cntxt, destReg, srcReg, NO_REG);
-
-    if (modARGS != REG_CONST) {
-        uint8_t reg = (direction) ? destReg : srcReg;
-        uint8_t rm = (modARGS == REG_REG) ? srcReg : RSP;
-
-        emitModRM(cntxt, modARGS, reg, rm);
-    }
-
-
-    if (modARGS != REG_REG && modARGS != REG_CONST) {
-
-        regCode_t baseReg = (direction) ? destReg, srcReg;
-
-        emitSIB(cntxt, 0x00, NO_REG, baseReg);
-        if (modARGS == MEM_32_OFFSET)
-            emit_u32(cntxt, disp);
-        if (modARGS == MEM_8_OFFSET)
-            emitByte(cntxt, (uint8_t)disp);
-    }
-}
-
-int emitMov(backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCode_t srcReg, int64_t disp) {
+int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCode_t srcReg, int64_t disp) {
     assert(cntxt);
 
     bool direction = (modARGS == REG_MEM);
 
-    uint8_t opCode = direction ? 0x8B : 0x89;
-    opCode = (modARGS == REG_CONST) ? 0xB8 + (destReg & 7): opCode;
+    uint8_t opCode = direction ? opCodeMOVsetDir : opCodeMOVcleanDir;
+    opCode = (modARGS == REG_CONST) ? opCodeMOVregConst + (destReg & 7): opCode;
 
     regCode_t valueReg = direction ? destReg : srcReg;
     regCode_t baseReg  = direction ? srcReg  : destReg;
@@ -161,12 +121,12 @@ int emitMov(backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCo
 
     if (modARGS == REG_CONST) {
         emit_u64(cntxt, (uint64_t)disp);
-        return 0;
+        return BACKEND_SUCCESS;
     }
 
     if (modARGS == REG_REG) {
         emitModRM(cntxt, REG_REG, valueReg, baseReg);
-        return 0;
+        return BACKEND_SUCCESS;
     }
 
     uint8_t mod = (!disp && (baseReg & 7) != RBP) ? MEM_NO_OFFSET: MEM_8_OFFSET;
@@ -175,32 +135,65 @@ int emitMov(backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCo
     emitModRM(cntxt, mod, valueReg, baseReg);
 
     if ((baseReg & 7) == RSP)
-        emitSIB(cntxt, 0x00, 0x04, RSP);
+        emitSIB(cntxt, 0x00, NO_INDEX_REG, RSP);
 
-    if (mod == 0x01)
+    if (mod == MEM_8_OFFSET)
         emitByte(cntxt, (uint8_t)disp);
-    else if (mod == 0x02)
-        emit_u32(cntxt, (uint32_t)disp);
+    else if (mod == MEM_32_OFFSET)
+        emit_32(cntxt, (int32_t)disp);
 
-    return 0;
+    return BACKEND_SUCCESS;
 }
 
 int emitJMPorCALL (backendContext_t* cntxt, bool isCnd, opCode_t opCode, uint64_t labelAddr) {
     assert(cntxt);
-    int32_t offset = (int32_t)(labelAddr - nextInstAddr);
 
     if (isCnd)
-        emit(cntxt, 0x0F);
+        emit(cntxt, ESCAPE_PREFIX);
 
     emitByte(cntxt, opCode);
-    emit_u32(cntxt, offset);
+    int32_t offset = (int32_t)(labelAddr - *cntxtBufSize(cntxt));
+
+    emit_32(cntxt, offset);
 }
 
 int emitSETcc (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg) {
     assert(cntxt);
 
-    emitByte(cntxt, 0x0F);
+    emitByte(cntxt, ESCAPE_PREFIX);
     emitByte(cntxt, opCode);
 
     emitModRM(cntxt, REG_REG, 0x00, destReg);
+}
+
+int emitMovzxRR8(backendContext_t* cntxt, regCode_t destReg, regCode_t srcReg) {
+    assert(cntxt);
+
+    emitRex64(cntxt, destReg, srcReg, NO_REG);
+    emitByte(cntxt, ESCAPE_PREFIX);
+
+    emitByte(cntxt, opCodeMOVZXrr8);
+
+    emitModRM(cntxt, REG_REG, destReg, srcReg);
+
+    return BACKEND_SUCCESS;
+}
+
+int emitAluRegConst(backendContext_t* cntxt, regCode_t regCode, int32_t imm, aluOpCode_t aluOpCode) {
+    assert(cntxt);
+
+    emitRex64(cntxt, NO_REG, regCode, NO_REG);
+
+    if (imm >= -128 && imm <= 127) {
+        emitByte(cntxt, 0x83);
+        emitModRM(cntxt, REG_REG, (uint8_t)aluOpCode, regCode);
+        emitByte(cntxt, (uint8_t)imm);
+    }
+    else {
+        emitByte(cntxt, 0x81);
+        emitModRM(cntxt, REG_REG, (uint8_t)aluOpCode, regCode);
+        emit_32CurPos(cntxt, (int32_t)imm);
+    }
+
+    return BACKEND_SUCCESS;
 }

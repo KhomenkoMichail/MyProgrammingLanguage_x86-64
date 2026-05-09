@@ -43,4 +43,8 @@ int* varReg (identifierInfo* varInfo);
 
 idType_t* infoIdType (identifierInfo* idStruct);
 
+operatorCode_t* nodeOpCode (node_t* node);
+
+char** nodeIdentifierName (node_t* node);
+
 #endif

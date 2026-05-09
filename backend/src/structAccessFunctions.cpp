@@ -112,6 +112,11 @@ size_t* intVectorCapacity (intVector_t* intVec) {
     return &(intVec->capacity);
 }
 
+int* intVectorElem (intVector_t* intVec, size_t elemNum) {
+    assert(intVec);
+    return &((intVec->buf)[elemNum]);
+}
+
 labelVector_t* cntxtLabelsArr (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->labelsArr);
@@ -152,7 +157,7 @@ unsigned long long* labelHash (label_t* label) {
     return &(label->hash);
 }
 
-intVector_t* labelPatchOffsets (label_t* label) {
+intVector_t* labelPatchAddresses (label_t* label) {
     assert(label);
     return &(label->patchOffsets);
 }
@@ -170,4 +175,23 @@ char* cntxtErrMessage (backendContext_t* cntxt) {
 labelVector_t* cntxtLabelVector (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->labelsArr);
+}
+
+bool* varPosInReg (varPos_t* varPos) {
+    assert(varPos);
+    return &(varPos->inReg);
+}
+regCode_t* varPosRegCode (varPos_t* varPos) {
+    assert(varPos);
+    return &(varPos->varrAddrComp.regCode);
+}
+
+int* varPosRbpOffset (varPos_t* varPos) {
+    assert(varPos);
+    return &(varPos->varrAddrComp.rbpOffset);
+}
+
+bool* labelHasAddress (label_t* label) {
+    assert(label);
+    return &(label->hasAddress);
 }

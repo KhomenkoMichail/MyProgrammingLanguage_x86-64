@@ -57,12 +57,22 @@ size_t* labelAddress (label_t* label);
 
 unsigned long long* labelHash (label_t* label);
 
-intVector_t* labelPatchOffsets (label_t* label);
+intVector_t* labelPatchAddresses (label_t* label);
+
+int* intVectorElem (intVector_t* intVec, size_t elemNum);
 
 backendErr_t* cntxtErrCode (backendContext_t* cntxt);
 
 char* cntxtErrMessage (backendContext_t* cntxt);
 
 labelVector_t* cntxtLabelVector (backendContext_t* cntxt);
+
+bool* varPosInReg (varPos_t* varPos);
+
+regCode_t* varPosRegCode (varPos_t* varPos);
+
+int* varPosRbpOffset (varPos_t* varPos);
+
+bool* labelHasAddress (label_t* label);
 
 #endif
