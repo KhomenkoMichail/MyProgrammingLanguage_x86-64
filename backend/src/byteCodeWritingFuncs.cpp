@@ -118,10 +118,28 @@ int executeBuffer (backendContext_t* cntxt) {
 int astToByteCode (backendContext_t* cntxt) {   //FIXME
     assert(cntxt);
 
-
+    if (!(*cntxtAsmFile(cntxt))) {
+        fprintf(stderr, "Error of opening file \"%s\"", *cntxtAsmFileName(cntxt));
+        perror("");
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_OPENING_ASM_FILE,
+                        "Error of opening file \"%s\" in func %s, %s:%d\n",
+                        *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
+    }
+    fprintfAsmFileHeader(*cntxtAsmFile(cntxt));
 
     addStdLibInBuffer(cntxt);
     nodeToByteCode(cntxt, *treeRoot(*cntxtTree(cntxt)), LEFT);
+
+    fprintf(*cntxtAsmFile(cntxt), "%%include \"./backend/src/stdlib.asm\"\n");
+
+    if (fclose(*cntxtAsmFile(cntxt)) != 0) {
+        fprintf(stderr, "Error of closing file \"%s\"", *cntxtAsmFileName(cntxt));
+        perror("");
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_CLOSING_ASM_FILE,
+                        "Error of closing file \"%s\" in func %s, %s:%d\n",
+                        *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
+    }
+
     return writeElfFile(cntxt);
 }
 
@@ -129,7 +147,7 @@ int nodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg
     assert(node);
     assert(cntxt);
 
-    //emitBreakpoint(cntxt, node);         //FIXME
+    fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
 
     switch (*nodeType(node)) {
         case typeNumber:
@@ -168,6 +186,7 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
         case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
 
         case opHLT:
+            fprintf(*cntxtAsmFile(cntxt), "call stdExit\n");
             JMP_PATCH_("stdExit");
             return *cntxtErrCode(cntxt);
 

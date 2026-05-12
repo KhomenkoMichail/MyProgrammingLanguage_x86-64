@@ -561,8 +561,7 @@ void fprintfAsmFileHeader (FILE* asmFile) {
     "global _start\n\n"
 
     "_start:\n"
-    "    call main\n"
-    "    call stdExit\n\n");
+    "    call main\n\n");
 }
 
 int rewriteOpSqrtToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
