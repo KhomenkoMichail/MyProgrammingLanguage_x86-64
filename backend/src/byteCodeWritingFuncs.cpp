@@ -117,7 +117,7 @@ int executeBuffer (backendContext_t* cntxt) {
 
 int astToByteCode (backendContext_t* cntxt) {   //FIXME
     assert(cntxt);
-
+/*
     if (!(*cntxtAsmFile(cntxt))) {
         fprintf(stderr, "Error of opening file \"%s\"", *cntxtAsmFileName(cntxt));
         perror("");
@@ -126,10 +126,10 @@ int astToByteCode (backendContext_t* cntxt) {   //FIXME
                         *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
     }
     fprintfAsmFileHeader(*cntxtAsmFile(cntxt));
-
+*/
     addStdLibInBuffer(cntxt);
-    nodeToByteCode(cntxt, *treeRoot(*cntxtTree(cntxt)), LEFT);
-
+    nodeToByteCode(cntxt, *treeRoot(*cntxtTree(cntxt)), RAX);
+/*
     fprintf(*cntxtAsmFile(cntxt), "%%include \"./backend/src/stdlib.asm\"\n");
 
     if (fclose(*cntxtAsmFile(cntxt)) != 0) {
@@ -139,19 +139,19 @@ int astToByteCode (backendContext_t* cntxt) {   //FIXME
                         "Error of closing file \"%s\" in func %s, %s:%d\n",
                         *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
     }
-
+*/
     return writeElfFile(cntxt);
 }
 
-int nodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int nodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(node);
     assert(cntxt);
 
-    fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
+//    fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
 
     switch (*nodeType(node)) {
         case typeNumber:
-            return MOV_RC_((regCode_t)resultReg, *nodeConstValue(node));
+            return MOV_RC_(resultReg, *nodeConstValue(node));
         case typeOperator:
             return opNodeToByteCode(cntxt, node, resultReg);
         case typeIdentifier:
@@ -164,7 +164,7 @@ int nodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg
     }
 }
 
-int opNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int opNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
@@ -186,7 +186,7 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
         case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
 
         case opHLT:
-            fprintf(*cntxtAsmFile(cntxt), "call stdExit\n");
+//            fprintf(*cntxtAsmFile(cntxt), "call stdExit\n");
             JMP_PATCH_("stdExit");
             return *cntxtErrCode(cntxt);
 
@@ -215,12 +215,12 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
     return BACKEND_SUCCESS;
 }
 
-int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(node);
     assert(cntxt);
 
     if (*nodeLeft(node))
-        nodeToByteCode (cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode (cntxt, *nodeLeft(node), RAX);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
                         "Error: calc node does not have LEFT in func %s, %s:%d\n",
@@ -230,14 +230,14 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
     if (*nodeRight(node)) {
         if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
                                         && (*nodeValue(node)).opCode != opCOMMA)
-            PUSHR_((regCode_t)LEFT);
+            PUSHR_(RAX);
 
-        nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
+        nodeToByteCode(cntxt, *nodeRight(node), RBX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
         if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
                                         && (*nodeValue(node)).opCode != opCOMMA)
-            POPR_((regCode_t)LEFT);
+            POPR_(RAX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
@@ -247,20 +247,20 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
 
     switch (*nodeOpCode(node)) {
         case (opADD):
-            ADD_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
+            ADD_RR_(RAX, RBX);
             break;
         case (opSUB):
-            SUB_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
+            SUB_RR_(RAX, RBX);
             break;
         case (opMUL):
-            IMUL_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
+            IMUL_RR_(RAX, RBX);
             break;
         case (opDIV):
             if (*regIsUsed(cntxt, RDX))
                 PUSHR_(RDX);
 
             CQO;
-            IDIV_((regCode_t)RIGHT);
+            IDIV_(RBX);
 
             if (*regIsUsed(cntxt, RDX))
                 POPR_(RDX);
@@ -268,8 +268,8 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
             break;
     }
 
-    if (resultReg == RIGHT)
-        MOV_RR_((regCode_t)RIGHT, (regCode_t)LEFT);
+    if (resultReg == RBX)
+        MOV_RR_(RBX, RAX);
 
     return *cntxtErrCode(cntxt);
 }
@@ -279,7 +279,7 @@ int opAssignToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(node);
 
     if (*nodeRight(node))
-        nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
+        nodeToByteCode(cntxt, *nodeRight(node), RBX);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
                         "Error: assign node does not have RIGHT in func %s, %s:%d\n",
@@ -289,9 +289,9 @@ int opAssignToByteCode (backendContext_t* cntxt, node_t* node) {
     if (*nodeLeft(node)) {
         varPos_t varPos = getVarPos(cntxt, *nodeLeft(node));
         if (*varPosInReg(&varPos))
-            MOV_RR_(*varPosRegCode(&varPos), (regCode_t)RIGHT);
+            MOV_RR_(*varPosRegCode(&varPos), RBX);
         else
-            MOV_MR_(RBP, *varPosRbpOffset(&varPos), (regCode_t)RIGHT);
+            MOV_MR_(RBP, *varPosRbpOffset(&varPos), RBX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
@@ -312,17 +312,17 @@ int opWhileToByteCode (backendContext_t* cntxt, node_t* node) {
     size_t whileStartBufPos = *cntxtProgramBufSize(cntxt);        //while:
 
     if (*nodeLeft(node)) {
-        nodeToByteCode(cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
 
-    TEST_RR_((regCode_t)LEFT, (regCode_t)LEFT);
+    TEST_RR_(RAX, RAX);
 
     JZ_(0x00);
     size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
 
     if (*nodeRight(node))
-        nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
+        nodeToByteCode(cntxt, *nodeRight(node), RBX);
 
     //emitJMPorCALL(cntxt, false, opCodeJMP, whileStartBufPos);   //JMP while
     int32_t whileOffset = (int32_t)(whileStartBufPos - *cntxtProgramBufSize(cntxt));
@@ -341,17 +341,17 @@ int opIfToByteCode (backendContext_t* cntxt, node_t* node) {
     (*cntxtIfCounter(cntxt))++;
 
     if (*nodeLeft(node)) {
-        nodeToByteCode(cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
 
-    TEST_RR_((regCode_t)LEFT, (regCode_t)LEFT);
+    TEST_RR_(RAX, RAX);
 
     JZ_(0x00);
     size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
 
     if (*nodeRight(node))
-        nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
+        nodeToByteCode(cntxt, *nodeRight(node), RBX);
 
     int32_t jzOffset = (int32_t)(*cntxtProgramBufSize(cntxt) - jzOffsetBufPos - OFFSET_LEN);
     emit_32givenPos(cntxt, jzOffsetBufPos, (uint32_t)jzOffset);
@@ -418,7 +418,7 @@ int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(node);
 
     if (*nodeLeft(node))
-        nodeToByteCode(cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
 
     freeScopeRegs(cntxt);
     popSavedRegsByteCode(cntxt, *curScopePushedRegsMask(*cntxtTree(cntxt)));
@@ -430,12 +430,12 @@ int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
-int opCompareToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
     if (*nodeRight(node)) {
-        nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
+        nodeToByteCode(cntxt, *nodeRight(node), RBX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
     else {
@@ -445,14 +445,14 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resu
     }
 
     if (*nodeLeft(node))
-        nodeToByteCode(cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
                         "Error: compare node does not have LEFT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
 
-    CMP_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
+    CMP_RR_(RAX, RBX);
 
     switch (*nodeOpCode(node)) {
         case opEQUAL:     SETE_(RAX);  break;
@@ -465,12 +465,12 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resu
             break;
     }
 
-    MOVZX_RR_((regCode_t)resultReg, RAX);
+    MOVZX_RR_(resultReg, RAX);
 
     return *cntxtErrCode(cntxt);
 }
 
-int idNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int idNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
@@ -514,7 +514,7 @@ int funcBodyToByteCode(backendContext_t* cntxt, node_t* node) {
     }
 
     if (*nodeRight(node))
-        nodeToByteCode(cntxt, *nodeRight(node), LEFT);
+        nodeToByteCode(cntxt, *nodeRight(node), RAX);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
                         "Error: func body node does not have RIGHT in func %s, %s:%d\n",
@@ -543,7 +543,7 @@ int gettingParamsToByteCode (backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
-int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
@@ -561,8 +561,8 @@ int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t r
     if (*nodeLeft(node))
         ADD_RC_(RSP, numOfFuncParams * 8);
 
-    if (resultReg == RIGHT)
-        MOV_RR_((regCode_t)RIGHT, (regCode_t)LEFT);
+    if (resultReg == RBX)
+        MOV_RR_(RBX, RAX);
 
     popSavedRegsByteCode(cntxt, pushedRegsMask);
 
@@ -578,8 +578,8 @@ int passingParamsToByteCode (backendContext_t* cntxt, node_t* node) {
         curParamsCounter += passingParamsToByteCode(cntxt, *nodeLeft(node));
     }
     else {
-        nodeToByteCode(cntxt, node, LEFT);
-        PUSHR_((regCode_t)LEFT);
+        nodeToByteCode(cntxt, node, RAX);
+        PUSHR_(RAX);
         curParamsCounter++;
     }
 
@@ -625,35 +625,35 @@ varPos_t getVarPos(backendContext_t* cntxt, node_t* node) {
     return varPos;
 }
 
-int varNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int varNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
     varPos_t varPos = getVarPos(cntxt, node);
 
     if (*varPosInReg(&varPos))
-        MOV_RR_((regCode_t)resultReg, *varPosRegCode(&varPos));
+        MOV_RR_(resultReg, *varPosRegCode(&varPos));
     else
-        MOV_RM_((regCode_t)resultReg, RBP, *varPosRbpOffset(&varPos));
+        MOV_RM_(resultReg, RBP, *varPosRbpOffset(&varPos));
 
     return *cntxtErrCode(cntxt);
 }
 
-int opSqrtToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int opSqrtToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
     if (*nodeLeft(node))
-        nodeToByteCode(cntxt, *nodeLeft(node), LEFT);
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
                            "Error: SQRT node does not have LEFT in func %s, %s:%d\n",
                            __func__, __FILE__, __LINE__);
     }
 
-    CVTSI2SD_(XMM0_CODE, (regCode_t)LEFT);
+    CVTSI2SD_(XMM0_CODE, RAX);
     SQRTSD_(XMM0_CODE, XMM0_CODE);
-    CVTTSD2SI_((regCode_t)resultReg, XMM0_CODE);
+    CVTTSD2SI_(resultReg, XMM0_CODE);
 
     return *cntxtErrCode(cntxt);
 }
