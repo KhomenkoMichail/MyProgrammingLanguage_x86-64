@@ -35,6 +35,11 @@ nodeValue_t* nodeValue (node_t* node) {
     return &(node->value);
 }
 
+int* nodeConstValue (node_t* node) {
+    assert(node);
+    return &(node->value.constValue);
+}
+
 node_t** treeRoot (tree_t* treePtr) {
     assert(treePtr);
 

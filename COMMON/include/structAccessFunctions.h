@@ -47,4 +47,6 @@ operatorCode_t* nodeOpCode (node_t* node);
 
 char** nodeIdentifierName (node_t* node);
 
+int* nodeConstValue (node_t* node);
+
 #endif

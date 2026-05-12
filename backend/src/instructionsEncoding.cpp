@@ -10,6 +10,7 @@
 #include "../include/backendConsts.h"
 #include "../include/structAccessFunctions.h"
 #include "../include/instructionsEncoding.h"
+#include "../include/backendCntxtFuncs.h"
 
 int emitByte (backendContext_t* cntxt, uint8_t byte) {
     assert(cntxt);
@@ -240,16 +241,25 @@ int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regC
     return *cntxtErrCode(cntxt);
 }
 
-int emitJMPorCALL (backendContext_t* cntxt, bool isCnd, opCode_t opCode, uint64_t labelAddr) {
+int emitJMP (backendContext_t* cntxt, bool isCnd, opCode_t opCode, int32_t offset) {
     assert(cntxt);
 
     if (isCnd)
         emitByte(cntxt, ESCAPE_PREFIX);
 
     emitByte(cntxt, opCode);
-    int32_t offset = (int32_t)(labelAddr - *cntxtProgramBufSize(cntxt));
 
     emit_32CurPos(cntxt, offset);
+    return *cntxtErrCode(cntxt);
+}
+
+int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, const char* patchLabelName) {
+    assert(cntxt);
+    assert(patchLabelName);
+
+    emitByte(cntxt, opCode);
+    patchCurLabel(cntxt, patchLabelName);
+
     return *cntxtErrCode(cntxt);
 }
 
@@ -313,4 +323,42 @@ int emitBreakpoint (backendContext_t* cntxt, node_t* node) {
                 return *cntxtErrCode(cntxt);
 
     return emitByte(cntxt, opCodeBREAKPOINT);
+}
+
+int emitCVTSI2SD(backendContext_t* cntxt, uint8_t dstXmmRegCode, regCode_t srcRegCode) {
+    assert(cntxt);
+
+    //fprintf(*cntxtByteFile(cntxt), "cvtsi2sd xmm0, %s\n", OP_REG_[LEFT]);    //FIXME
+    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
+    emitRex64(cntxt, NO_REG, srcRegCode, NO_REG);
+    emitByte(cntxt, ESCAPE_PREFIX);
+    emitByte(cntxt, opCodeCVTSI2SD);
+    emitModRM(cntxt, REG_REG, dstXmmRegCode, srcRegCode);
+
+    return *cntxtErrCode(cntxt);
+}
+
+int emitSQRTSD(backendContext_t* cntxt, uint8_t dstXmmRegCode, uint8_t srcXmmRegCode) {
+    assert(cntxt);
+
+    //fprintf(*cntxtByteFile(cntxt), "sqrtsd xmm0, xmm0\n");
+    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
+    emitByte(cntxt, ESCAPE_PREFIX);
+    emitByte(cntxt, opCodeSQRTSD);
+    emitModRM(cntxt, REG_REG, dstXmmRegCode, srcXmmRegCode);
+
+    return *cntxtErrCode(cntxt);
+}
+
+int emitCVTTSD2SI(backendContext_t* cntxt, regCode_t dstRegCode, uint8_t srcXmmRegCode) {
+    assert(cntxt);
+
+    //fprintf(*cntxtByteFile(cntxt), "cvttsd2si %s, xmm0\n", OP_REG_[resultReg]); //FIXME
+    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
+    emitRex64(cntxt, dstRegCode, NO_REG, NO_REG);
+    emitByte(cntxt, ESCAPE_PREFIX);
+    emitByte(cntxt, opCodeCVVTSD2SI);
+    emitModRM(cntxt, REG_REG, dstRegCode, srcXmmRegCode);
+
+    return *cntxtErrCode(cntxt);
 }

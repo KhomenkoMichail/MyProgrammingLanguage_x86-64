@@ -22,6 +22,7 @@
 #include "../include/backendCntxtFuncs.h"
 #include "../include/byteCodeWritingFuncs.h"
 #include "../include/asmProgramWriter.h"
+#include "../include/backendDSL.h"
 
 int writeElfFile(backendContext_t* cntxt) {
     assert(cntxt);
@@ -117,6 +118,8 @@ int executeBuffer (backendContext_t* cntxt) {
 int astToByteCode (backendContext_t* cntxt) {   //FIXME
     assert(cntxt);
 
+
+
     addStdLibInBuffer(cntxt);
     nodeToByteCode(cntxt, *treeRoot(*cntxtTree(cntxt)), LEFT);
     return writeElfFile(cntxt);
@@ -126,11 +129,11 @@ int nodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg
     assert(node);
     assert(cntxt);
 
-    //emitBreakpoint(cntxt, node);
+    //emitBreakpoint(cntxt, node);         //FIXME
 
     switch (*nodeType(node)) {
         case typeNumber:
-            return emitMov(cntxt, REG_CONST, (regCode_t)resultReg, NO_REG, nodeValue(node)->constValue); //MOV_RC(resultReg, nodeValue(node)->constValue)
+            return MOV_RC_((regCode_t)resultReg, *nodeConstValue(node));
         case typeOperator:
             return opNodeToByteCode(cntxt, node, resultReg);
         case typeIdentifier:
@@ -164,8 +167,10 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
         case opRET: return opRetToByteCode(cntxt, node);
         case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
 
-        case opHLT: emitByte(cntxt, opCodeJMP);    // JMP_("stdExit"); return *cntxtErrCode(cntxt);
-        return patchCurLabel(cntxt, "stdExit");
+        case opHLT:
+            JMP_PATCH_("stdExit");
+            return *cntxtErrCode(cntxt);
+
 
         case opEQUAL:
         case opBELOW:
@@ -206,14 +211,14 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
     if (*nodeRight(node)) {
         if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
                                         && (*nodeValue(node)).opCode != opCOMMA)
-            emitPushReg(cntxt, (regCode_t)LEFT);
+            PUSHR_((regCode_t)LEFT);
 
         nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
         if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
                                         && (*nodeValue(node)).opCode != opCOMMA)
-            emitPopReg(cntxt, (regCode_t)LEFT);
+            POPR_((regCode_t)LEFT);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
@@ -223,50 +228,29 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
 
     switch (*nodeOpCode(node)) {
         case (opADD):
-            emitOpRegReg(cntxt, opCodeADD, (regCode_t)LEFT, (regCode_t)RIGHT);
+            ADD_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
             break;
         case (opSUB):
-            emitOpRegReg(cntxt, opCodeSUB, (regCode_t)LEFT, (regCode_t)RIGHT);
+            SUB_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
             break;
         case (opMUL):
-            emitOpRegReg(cntxt, opCodeIMUL, (regCode_t)LEFT, (regCode_t)RIGHT);
+            IMUL_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
             break;
         case (opDIV):
             if (*regIsUsed(cntxt, RDX))
-                emitPushReg(cntxt, RDX);
+                PUSHR_(RDX);
 
-            emitCqo(cntxt);
-            emitIdiv(cntxt, (regCode_t)RIGHT);
+            CQO;
+            IDIV_((regCode_t)RIGHT);
 
             if (*regIsUsed(cntxt, RDX))
-                emitPopReg(cntxt, RDX);
+                POPR_(RDX);
         default:
             break;
     }
 
-    /*
-    if (*nodeOpCode(node); == opADD)
-        emitOpRegReg(cntxt, opCodeADD, (regCode_t)LEFT, (regCode_t)RIGHT);
-
-    if (*nodeOpCode(node); == opSUB)
-        emitOpRegReg(cntxt, opCodeSUB, (regCode_t)LEFT, (regCode_t)RIGHT);
-
-    if (*nodeOpCode(node); == opMUL)
-        emitOpRegReg(cntxt, opCodeIMUL, (regCode_t)LEFT, (regCode_t)RIGHT);
-
-    if (*nodeOpCode(node); == opDIV) {
-        if (*regIsUsed(cntxt, RDX))
-            emitPushReg(cntxt, RDX);
-
-        emitCqo(cntxt);
-        emitIdiv(cntxt, (regCode_t)RIGHT);
-
-        if (*regIsUsed(cntxt, RDX))
-            emitPopReg(cntxt, RDX);
-    }*/
-
     if (resultReg == RIGHT)
-        emitMov(cntxt, REG_REG, (regCode_t)RIGHT, (regCode_t)LEFT, NO_DISP);
+        MOV_RR_((regCode_t)RIGHT, (regCode_t)LEFT);
 
     return *cntxtErrCode(cntxt);
 }
@@ -286,9 +270,9 @@ int opAssignToByteCode (backendContext_t* cntxt, node_t* node) {
     if (*nodeLeft(node)) {
         varPos_t varPos = getVarPos(cntxt, *nodeLeft(node));
         if (*varPosInReg(&varPos))
-            emitMov(cntxt, REG_REG, *varPosRegCode(&varPos), (regCode_t)RIGHT, NO_DISP);
+            MOV_RR_(*varPosRegCode(&varPos), (regCode_t)RIGHT);
         else
-            emitMov(cntxt, MEM_REG, RBP, (regCode_t)RIGHT, *varPosRbpOffset(&varPos));
+            MOV_MR_(RBP, *varPosRbpOffset(&varPos), (regCode_t)RIGHT);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
@@ -313,17 +297,17 @@ int opWhileToByteCode (backendContext_t* cntxt, node_t* node) {
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
 
-    emitOpRegReg(cntxt, opCodeTEST, (regCode_t)LEFT, (regCode_t)LEFT);    //test rax rax
+    TEST_RR_((regCode_t)LEFT, (regCode_t)LEFT);
 
-    emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeJZ);                                      //jz 0000
-    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt);
-    emit_32CurPos(cntxt, 0x00);
+    JZ_(0x00);
+    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
 
     if (*nodeRight(node))
         nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
 
-    emitJMPorCALL(cntxt, false, opCodeJMP, whileStartBufPos);   //JMP while
+    //emitJMPorCALL(cntxt, false, opCodeJMP, whileStartBufPos);   //JMP while
+    int32_t whileOffset = (int32_t)(whileStartBufPos - *cntxtProgramBufSize(cntxt));
+    JMP_OFFSET_(whileOffset);
 
     int32_t jzOffset = (int32_t)(*cntxtProgramBufSize(cntxt) - jzOffsetBufPos - OFFSET_LEN);
     emit_32givenPos(cntxt, jzOffsetBufPos, (uint32_t)jzOffset);
@@ -342,12 +326,10 @@ int opIfToByteCode (backendContext_t* cntxt, node_t* node) {
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
 
-    emitOpRegReg(cntxt, opCodeTEST, (regCode_t)LEFT, (regCode_t)LEFT);
+    TEST_RR_((regCode_t)LEFT, (regCode_t)LEFT);
 
-    emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeJZ);
-    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt);
-    emit_32CurPos(cntxt, 0x00);
+    JZ_(0x00);
+    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
 
     if (*nodeRight(node))
         nodeToByteCode(cntxt, *nodeRight(node), RIGHT);
@@ -363,17 +345,17 @@ int opInToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(node);
 
     uint32_t pushedRegsMask = pushSavedRegsByteCode(cntxt, callerSaved);
-    //fprintf(*cntxtByteFile(cntxt), "call stdIn\n"); //FIXME
-    emitByte(cntxt, opCodeCALL);
-    patchCurLabel(cntxt, "stdIn");
+
+    CALL_("stdIn");
+
     popSavedRegsByteCode(cntxt, pushedRegsMask);
 
     if (*nodeLeft(node)) {
         varPos_t varPos = getVarPos(cntxt, *nodeLeft(node));
         if (*varPosInReg(&varPos))
-            emitMov(cntxt, REG_REG, *varPosRegCode(&varPos), RAX, NO_DISP);
+            MOV_RR_(*varPosRegCode(&varPos), RAX);
         else
-            emitMov(cntxt, MEM_REG, RBP, RAX, *varPosRbpOffset(&varPos));
+            MOV_MR_(RBP, *varPosRbpOffset(&varPos), RAX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
@@ -392,9 +374,9 @@ int opOutToByteCode (backendContext_t* cntxt, node_t* node) {
     if (*nodeLeft(node)) {
         varPos_t varPos = getVarPos(cntxt, *nodeLeft(node));
         if (*varPosInReg(&varPos))
-            emitMov(cntxt, REG_REG, RAX, *varPosRegCode(&varPos), NO_DISP);
+            MOV_RR_(RAX, *varPosRegCode(&varPos));
         else
-            emitMov(cntxt, REG_MEM, RAX, RBP, *varPosRbpOffset(&varPos));
+            MOV_RM_(RAX, RBP, *varPosRbpOffset(&varPos));
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
@@ -403,9 +385,9 @@ int opOutToByteCode (backendContext_t* cntxt, node_t* node) {
     }
 
     uint32_t pushedRegsMask = pushSavedRegsByteCode(cntxt, callerSaved);
-    //fprintf(*cntxtByteFile(cntxt), "call stdOut\n");                   //FIXME
-    emitByte(cntxt, opCodeCALL);
-    patchCurLabel(cntxt, "stdOut");
+
+    CALL_("stdOut");
+
     popSavedRegsByteCode(cntxt, pushedRegsMask);
 
     return *cntxtErrCode(cntxt);
@@ -422,9 +404,9 @@ int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
     freeScopeRegs(cntxt);
     popSavedRegsByteCode(cntxt, *curScopePushedRegsMask(*cntxtTree(cntxt)));
 
-    emitMov(cntxt, REG_REG, RSP, RBP, NO_DISP);
-    emitPopReg(cntxt, RBP);
-    emitRet(cntxt);
+    MOV_RR_(RSP, RBP);
+    POPR_(RBP);
+    RET;
 
     return *cntxtErrCode(cntxt);
 }
@@ -451,44 +433,20 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resu
                         __func__, __FILE__, __LINE__);
     }
 
-    emitOpRegReg(cntxt, opCodeCMP, (regCode_t)LEFT, (regCode_t)RIGHT);
+    CMP_RR_((regCode_t)LEFT, (regCode_t)RIGHT);
 
     switch (*nodeOpCode(node)) {
-        case opEQUAL:
-            emitSETcc(cntxt, opCodeSETe, RAX);
-            break;
-        case opNOT_EQUAL:
-            emitSETcc(cntxt, opCodeSETne, RAX);
-            break;
-        case opBELOW:
-            emitSETcc(cntxt, opCodeSETl, RAX);
-            break;
-        case opABOVE:
-            emitSETcc(cntxt, opCodeSETg, RAX);
-            break;
-        case opE_BELOW:
-            emitSETcc(cntxt, opCodeSETle, RAX);
-            break;
-        case opE_ABOVE:
-            emitSETcc(cntxt, opCodeSETge, RAX);
+        case opEQUAL:     SETE_(RAX);  break;
+        case opNOT_EQUAL: SETNE_(RAX); break;
+        case opBELOW:     SETL_(RAX);  break;
+        case opABOVE:     SETG_(RAX);  break;
+        case opE_BELOW:   SETE_(RAX);  break;
+        case opE_ABOVE:   SETGE_(RAX); break;
         default:
             break;
     }
 
-    /*if (*nodeOpCode(node); == opEQUAL)
-        fprintf(*cntxtByteFile(cntxt), "sete al\n");        //FIXME
-    if (*nodeOpCode(node); == opNOT_EQUAL)
-        fprintf(*cntxtByteFile(cntxt), "setne al\n");
-    if (*nodeOpCode(node); == opBELOW)
-        fprintf(*cntxtByteFile(cntxt), "setl al\n");
-    if (*nodeOpCode(node); == opABOVE)
-        fprintf(*cntxtByteFile(cntxt), "setg al\n");
-    if (*nodeOpCode(node); == opE_BELOW)
-        fprintf(*cntxtByteFile(cntxt), "setle al\n");
-    if (*nodeOpCode(node); == opE_ABOVE)
-        fprintf(*cntxtByteFile(cntxt), "setge al\n");*/
-
-    emitMovzxRR8(cntxt, (regCode_t)resultReg, RAX);
+    MOVZX_RR_((regCode_t)resultReg, RAX);
 
     return *cntxtErrCode(cntxt);
 }
@@ -518,14 +476,14 @@ int funcBodyToByteCode(backendContext_t* cntxt, node_t* node) {
     addLabelAddressInCntxt(cntxt, *nodeIdentifierName(node));
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
-    emitPushReg(cntxt, RBP);
-    emitMov(cntxt, REG_REG, RBP, RSP, NO_DISP);
+    PUSHR_(RBP);
+    MOV_RR_(RBP, RSP);
 
     size_t numOfStackVars = (*nodeFuncNumOfLocalVars(node) > NUM_OF_VARS_REGS) ?
                             *nodeFuncNumOfLocalVars(node) - NUM_OF_VARS_REGS : 0;
 
-    //fprintf(*cntxtByteFile(cntxt), "sub rsp, %zu\n", numOfStackVars * 8);
-    emitAluRegConst(cntxt, RSP, (int32_t)numOfStackVars * 8, aluSUB);
+    if (numOfStackVars)
+        SUB_RC_(RSP, (int32_t)numOfStackVars * 8);
 
     enterNewScope(*cntxtTree(cntxt));
 
@@ -577,17 +535,15 @@ int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t r
     if (*nodeLeft(node))
         numOfFuncParams = passingParamsToByteCode(cntxt, *nodeLeft(node));
 
-    emitByte(cntxt, opCodeCALL);
-    patchCurLabel(cntxt, *nodeIdentifierName(node));
+    CALL_(*nodeIdentifierName(node));
+
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
-    //fprintf(*cntxtByteFile(cntxt), "call %s\n", *nodeIdentifierName(node));
 
     if (*nodeLeft(node))
-        emitAluRegConst(cntxt, RSP, numOfFuncParams * 8, aluADD);
-        //fprintf(*cntxtByteFile(cntxt), "add rsp, %d\n", numOfFuncParams * 8);
+        ADD_RC_(RSP, numOfFuncParams * 8);
 
     if (resultReg == RIGHT)
-        emitMov(cntxt, REG_REG, (regCode_t)RIGHT, (regCode_t)LEFT, NO_DISP);
+        MOV_RR_((regCode_t)RIGHT, (regCode_t)LEFT);
 
     popSavedRegsByteCode(cntxt, pushedRegsMask);
 
@@ -604,7 +560,7 @@ int passingParamsToByteCode (backendContext_t* cntxt, node_t* node) {
     }
     else {
         nodeToByteCode(cntxt, node, LEFT);
-        emitPushReg(cntxt, (regCode_t)LEFT);
+        PUSHR_((regCode_t)LEFT);
         curParamsCounter++;
     }
 
@@ -657,9 +613,9 @@ int varNodeToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t result
     varPos_t varPos = getVarPos(cntxt, node);
 
     if (*varPosInReg(&varPos))
-        emitMov(cntxt, REG_REG, (regCode_t)resultReg, *varPosRegCode(&varPos), NO_DISP);
+        MOV_RR_((regCode_t)resultReg, *varPosRegCode(&varPos));
     else
-        emitMov(cntxt, REG_MEM, (regCode_t)resultReg, RBP, *varPosRbpOffset(&varPos));
+        MOV_RM_((regCode_t)resultReg, RBP, *varPosRbpOffset(&varPos));
 
     return *cntxtErrCode(cntxt);
 }
@@ -676,25 +632,9 @@ int opSqrtToByteCode (backendContext_t* cntxt, node_t* node, resultReg_t resultR
                            __func__, __FILE__, __LINE__);
     }
 
-    //fprintf(*cntxtByteFile(cntxt), "cvtsi2sd xmm0, %s\n", OP_REG_[LEFT]);    //FIXME
-    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
-    emitRex64(cntxt, NO_REG, (regCode_t)LEFT, NO_REG);
-    emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeCVTSI2SD);
-    emitModRM(cntxt, REG_REG, XMM0_CODE, (regCode_t)LEFT);
-
-    //fprintf(*cntxtByteFile(cntxt), "sqrtsd xmm0, xmm0\n");
-    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
-    emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeSQRTSD);
-    emitModRM(cntxt, REG_REG, XMM0_CODE, XMM0_CODE);
-
-    //fprintf(*cntxtByteFile(cntxt), "cvttsd2si %s, xmm0\n", OP_REG_[resultReg]); //FIXME
-    emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
-    emitRex64(cntxt, (regCode_t)resultReg, NO_REG, NO_REG);
-    emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeCVVTSD2SI);
-    emitModRM(cntxt, REG_REG, (uint8_t)resultReg, XMM0_CODE);
+    CVTSI2SD_(XMM0_CODE, (regCode_t)LEFT);
+    SQRTSD_(XMM0_CODE, XMM0_CODE);
+    CVTTSD2SI_((regCode_t)resultReg, XMM0_CODE);
 
     return *cntxtErrCode(cntxt);
 }
@@ -707,7 +647,7 @@ uint32_t pushSavedRegsByteCode (backendContext_t* cntxt, regSaveDecl_t saveDecl)
     for (size_t curReg = 0; curReg < NUM_OF_REGS; curReg++) {
         if (*regIsUsed(cntxt, (regCode_t)curReg) && regSaveDecl(cntxt, (regCode_t)curReg) == saveDecl) {
 
-            emitPushReg(cntxt, (regCode_t)curReg);
+            PUSHR_((regCode_t)curReg);
 
             pushedRegsMask |= (1u << curReg);
             *regIsUsed(cntxt, (regCode_t)curReg) = false;
@@ -723,7 +663,7 @@ int popSavedRegsByteCode (backendContext_t* cntxt, uint32_t pushedRegsMask) {
     for (int curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--) {
         if (pushedRegsMask & (1u << curReg)) {
 
-            emitPopReg(cntxt, (regCode_t)curReg);
+            POPR_((regCode_t)curReg);
 
             *regIsUsed(cntxt, (regCode_t)curReg) = true;
         }
@@ -735,23 +675,19 @@ int popSavedRegsByteCode (backendContext_t* cntxt, uint32_t pushedRegsMask) {
 int addStdLibInBuffer (backendContext_t* cntxt) {
     assert(cntxt);
 
-    emitByte(cntxt, opCodeJMP);
-    patchCurLabel(cntxt, "main");
+    JMP_PATCH_("main");
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     addLabelAddressInCntxt(cntxt, "stdExit");
-    emitByte(cntxt, opCodeJMP);
-    emit_32CurPos(cntxt, STDEXIT_OFFSET);
+    JMP_OFFSET_(STDEXIT_OFFSET);
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     addLabelAddressInCntxt(cntxt, "stdIn");
-    emitByte(cntxt, opCodeJMP);
-    emit_32CurPos(cntxt, STDIN_OFFSET);
+    JMP_OFFSET_(STDIN_OFFSET);
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     addLabelAddressInCntxt(cntxt, "stdOut");
-    emitByte(cntxt, opCodeJMP);
-    emit_32CurPos(cntxt, STDOUT_OFFSET);
+    JMP_OFFSET_(STDOUT_OFFSET);
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     if (*cntxtProgramBufSize(cntxt) + STDLIB_SIZE > *cntxtProgramBufCapacity(cntxt)) {
