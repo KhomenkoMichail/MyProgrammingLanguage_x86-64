@@ -155,5 +155,5 @@ void fprintfCommentsToAsm (node_t* node, sourceFile_t* srcFile, FILE* asmFile) {
             fprintf(asmFile, ";         %s\n", ((srcFile->arrOfStringStructs)[numOfLine]).ptrToString);
     fprintf(asmFile, ";-----------------------------------------------------------\n");
     fprintf(asmFile, "\n\n");
-    fprintf(asmFile, "int3                              ; breackPoint\n");
+    fprintf(asmFile, "int3                              ; breackPoint\n"); //FIXME
 }

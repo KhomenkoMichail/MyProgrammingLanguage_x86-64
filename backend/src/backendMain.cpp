@@ -9,29 +9,32 @@
 #include "../include/structAccessFunctions.h"
 #include "../include/backendCntxtFuncs.h"
 #include "../include/asmProgramWriter.h"
+#include "../include/byteCodeWritingFuncs.h"
 
 
 int main (int argc, const char* argv[]) {
 
-    if (argc != 4) return printf("Usage: %s input.txt output.asm programSource.txt\n", argv[0]), 1;
+    if (argc != 5) return printf("Usage: %s astFile.txt output.asm executable.elf programSource.txt\n", argv[0]), 1;
 
-    const char* inputFile = argv[1];
-    const char* outputFile = argv[2];
-    const char* sourceFile = argv[3];
+    const char* astFile = argv[1];
+    const char* asmFile = argv[2];
+    const char* elfFile = argv[3];
+    const char* sourceFile = argv[4];
 
     backendContext_t cntxt = {};
-    if (backendCntxtCtor(&cntxt, inputFile, outputFile, sourceFile) != BACKEND_SUCCESS) {
+    if (backendCntxtCtor(&cntxt, astFile, asmFile, elfFile, sourceFile) != BACKEND_SUCCESS) {
         reportBackendError(&cntxt);
         backendCntxtDtor(&cntxt);
         return *cntxtErrCode(&cntxt);
     }
 
-    if (rewriteAstToAsmCode(&cntxt) != BACKEND_SUCCESS) {
+    if (astToByteCode(&cntxt) != BACKEND_SUCCESS) {
         reportBackendError(&cntxt);
         backendCntxtDtor(&cntxt);
         return *cntxtErrCode(&cntxt);
     };
 
+    //executeBuffer(&cntxt);
     backendCntxtDtor(&cntxt);
 
     return BACKEND_SUCCESS;

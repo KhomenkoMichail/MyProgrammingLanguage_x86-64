@@ -9,6 +9,8 @@
     return code; \
 } while(0)
 
+typedef int (*bufFunc_t)(void);
+
 enum backendErr_t {
     BACKEND_SUCCESS = 0,
     BACKEND_ERR_TREE_DUMP_CALLOC = 1,
@@ -27,11 +29,14 @@ enum backendErr_t {
     BACKEND_ERR_LABELS_ARR_REALLOC = 14,
     BACKEND_ERR_PATCH_ARR_REALLOC = 15,
     BACKEND_ERR_PROGRAM_BUF_REALLOC = 16,
+    BACKEND_ERR_OPEN_ELF_FILE = 17,
+    BACKEND_ERR_CLOSING_ASM_FILE = 18,
+    BACKEND_ERR_CLOSING_ELF_FILE = 19,
 };
 
 enum resultReg_t {
     LEFT  = 0,
-    RIGHT = 1,
+    RIGHT = 3,
 };
 
 const char* const OP_REG_[2] = { "rax", "rbx" };
@@ -39,9 +44,9 @@ const char* const OP_REG_[2] = { "rax", "rbx" };
 enum regCode_t {
     NO_REG = -1,
     RAX = 0,
-    RBX = 1,
-    RCX = 2,
-    RDX = 3,
+    RCX = 1,
+    RDX = 2,
+    RBX = 3,
     RSP = 4,
     RBP = 5,
     RSI = 6,
@@ -71,9 +76,9 @@ struct regInfo_t {
 };
 
 const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
-                                      { "rbx", true,  specialSaved },
                                       { "rcx", false, callerSaved  },
                                       { "rdx", false, callerSaved  },
+                                      { "rbx", true,  specialSaved },
                                       { "rsp", true,  specialSaved },
                                       { "rbp", true,  specialSaved },
                                       { "rsi", false, callerSaved  },
@@ -100,7 +105,6 @@ enum opCode_t {
     opCodeCQO = 0x99,
     opCodePUSH = 0x50,
     opCodePOP = 0x58,
-    opCodeIMUL = 0xAF,
     opCodeIDIV = 0xF7,
     opCodeMOVsetDir = 0x8B,
     opCodeMOVcleanDir = 0x89,
@@ -117,6 +121,7 @@ enum opCode_t {
     opCodeCVTSI2SD = 0x2A,
     opCodeSQRTSD = 0x51,
     opCodeCVVTSD2SI = 0x2C,
+    opCodeBREAKPOINT = 0xCC,
 };
 
 enum aluOpCode_t {
@@ -125,12 +130,17 @@ enum aluOpCode_t {
 };
 
 const uint8_t ESCAPE_PREFIX = 0x0F;
-const uint8_t DOUBLE_PRECISION_PREFIX = 0xF2
+const uint8_t DOUBLE_PRECISION_PREFIX = 0xF2;
+
 const uint8_t REX_W_BYTE = 0x48;
+const uint8_t REX_B_BYTE = 0x41;
+
 const uint8_t XMM0_CODE = 0x00;
 
 const int IDIV_EXTRA_OPCODE = 0x07;
 const int NO_INDEX_REG = 0x04;
+
+const int OFFSET_LEN = 4;
 
 enum modARGS_t {
     MEM_NO_OFFSET = 0x00,
@@ -150,6 +160,12 @@ struct file_t {
 
 struct intVector_t {
     int* buf;
+    size_t curSize;
+    size_t capacity;
+};
+
+struct uint8Vector_t {
+    uint8_t* buf;
     size_t curSize;
     size_t capacity;
 };
@@ -174,6 +190,7 @@ const int BACKEND_ERR_MSG_LEN = 256;
 const size_t INIT_PROGRAM_BUF_CAPASITY = 1024;
 
 struct backendContext_t {
+    const char* elfFileName;
     file_t asmFile;
     sourceFile_t* sourceFile;
 
@@ -181,7 +198,7 @@ struct backendContext_t {
     dump* treeDump;
     char* astCopyBuffer;
 
-    intVector_t programBuf;
+    uint8Vector_t programBuf;
 
     regInfo_t* regsArr;
 
@@ -200,7 +217,7 @@ struct backendContext_t {
 const size_t INIT_LABELS_ARR_CAPACITY = 64;
 const size_t INIT_LABEL_PATCH_ADDRESSES_CAPACITY = 16;
 
-const int64_t NO_DESP = 0xBADBABE;
+const int64_t NO_DISP = 0xBADBABE;
 
 union varAddrComp_t {
     regCode_t regCode;

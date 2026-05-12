@@ -9,13 +9,15 @@ const char* regName (backendContext_t* cntxt, regCode_t regCode);
 
 sourceFile_t** cntxtSrcFile (backendContext_t* cntxt);
 
+const char** cntxtElfFileName (backendContext_t* cntxt);
+
 const char** cntxtAsmFileName (backendContext_t* cntxt);
 
 FILE** cntxtAsmFile (backendContext_t* cntxt);
 
 tree_t** cntxtTree (backendContext_t* cntxt);
 
-int** cntxtProgramBuf (backendContext_t* cntxt);
+uint8_t** cntxtProgramBuf (backendContext_t* cntxt);
 
 size_t* cntxtProgramBufSize(backendContext_t* cntxt);
 
@@ -74,5 +76,7 @@ regCode_t* varPosRegCode (varPos_t* varPos);
 int* varPosRbpOffset (varPos_t* varPos);
 
 bool* labelHasAddress (label_t* label);
+
+uint8_t* cntxtProgramBufElem (backendContext_t* cntxt, size_t elemNum);
 
 #endif

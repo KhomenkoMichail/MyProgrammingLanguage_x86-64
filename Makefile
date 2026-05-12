@@ -1,4 +1,4 @@
-flags = -Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-equal -Winline -Wunreachable-code -Wmissing-declarations -Wmissing-include-dirs -Wswitch-enum -Wswitch-default -Weffc++ -Wmain -Wextra -Wall -g -pipe -fexceptions -Wcast-qual -Wconversion -Wctor-dtor-privacy -Wempty-body -Wformat-security -Wformat=2 -Wignored-qualifiers -Wlogical-op -Wno-missing-field-initializers -Wnon-virtual-dtor -Woverloaded-virtual -Wpointer-arith -Wsign-promo -Wstack-usage=8192 -Wstrict-aliasing -Wstrict-null-sentinel -Wtype-limits -Wwrite-strings -Werror=vla -D_DEBUG -D_EJUDGE_CLIENT_SIDE
+flags = -Wshadow -Winit-self -Wredundant-decls -Wcast-align -Wundef -Wfloat-equal -Winline -Wunreachable-code -Wmissing-declarations -Wmissing-include-dirs -Wswitch-default -Weffc++ -Wmain -Wextra -Wall -g -pipe -fexceptions -Wcast-qual -Wconversion -Wctor-dtor-privacy -Wempty-body -Wformat-security -Wformat=2 -Wignored-qualifiers -Wlogical-op -Wno-missing-field-initializers -Wnon-virtual-dtor -Woverloaded-virtual -Wpointer-arith -Wsign-promo -Wstack-usage=8192 -Wstrict-aliasing -Wstrict-null-sentinel -Wtype-limits -Wwrite-strings -Werror=vla -D_DEBUG -D_EJUDGE_CLIENT_SIDE
 
 
 common_all = COMMON/include/helpingFunctions.h COMMON/include/nameTableConsts.h COMMON/include/nameTableStack.h COMMON/include/operatorsArray.h COMMON/include/structAccessFunctions.h COMMON/include/structsAndConsts.h COMMON/include/treeFunctions.h COMMON/include/saveTreeInFile.h COMMON/include/readTreeFromFileFunc.h COMMON/include/numbersArray.h
@@ -11,9 +11,9 @@ front_cpp = frontend/src/main.cpp frontend/src/lexicalAnalysis.cpp frontend/src/
 front_all = frontend/include/DSL.h frontend/include/lexicalAnalysis.h frontend/include/syntacticAnalysis.h
 
 
-back_cpp = backend/src/backendMain.cpp backend/src/asmProgramWriter.cpp backend/src/sourceFileParser.cpp backend/src/backendCntxtFuncs.cpp backend/src/structAccessFunctions.cpp
+back_cpp = backend/src/backendMain.cpp backend/src/asmProgramWriter.cpp backend/src/sourceFileParser.cpp backend/src/backendCntxtFuncs.cpp backend/src/structAccessFunctions.cpp backend/src/byteCodeWritingFuncs.cpp backend/src/instructionsEncoding.cpp
 
-back_all = backend/include/asmProgramWriter.h backend/include/backendConsts.h backend/include/sourceFileParser.h backend/include/backendCntxtFuncs.h backend/include/backendConsts.h
+back_all = backend/include/asmProgramWriter.h backend/include/backendConsts.h backend/include/sourceFileParser.h backend/include/backendCntxtFuncs.h backend/include/backendConsts.h backend/include/byteCodeWritingFuncs.h backend/include/instructionsEncoding.h backend/include/stdlibHex.h
 
 
 middle_cpp = middleend/src/middleEndMain.cpp middleend/src/middleendOptimization.cpp
@@ -32,7 +32,7 @@ build-f: $(front_all) $(common_cpp) $(common_all)
 
 build-b: $(back_all) $(common_cpp) $(common_all)
 	@echo -------------------------------------------------------------------------
-	g++ $(back_cpp) $(common_cpp) $(flags) -o backend/build/backend.exe
+	g++ -g $(back_cpp) $(common_cpp) $(flags) -o backend/build/backend.exe
 
 build-m: $(middle_all) $(middle_cpp) $(common_all)
 	@echo -------------------------------------------------------------------------

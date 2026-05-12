@@ -47,7 +47,7 @@ tree_t** cntxtTree (backendContext_t* cntxt) {
     return &(cntxt->tree);
 }
 
-int** cntxtProgramBuf (backendContext_t* cntxt) {
+uint8_t** cntxtProgramBuf (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->programBuf.buf);
 }
@@ -159,7 +159,7 @@ unsigned long long* labelHash (label_t* label) {
 
 intVector_t* labelPatchAddresses (label_t* label) {
     assert(label);
-    return &(label->patchOffsets);
+    return &(label->patchAddresses);
 }
 
 backendErr_t* cntxtErrCode (backendContext_t* cntxt) {
@@ -194,4 +194,14 @@ int* varPosRbpOffset (varPos_t* varPos) {
 bool* labelHasAddress (label_t* label) {
     assert(label);
     return &(label->hasAddress);
+}
+
+uint8_t* cntxtProgramBufElem (backendContext_t* cntxt, size_t elemNum) {
+    assert(cntxt);
+    return &((cntxt->programBuf.buf)[elemNum]);
+}
+
+const char** cntxtElfFileName (backendContext_t* cntxt) {
+    assert(cntxt);
+    return &(cntxt->elfFileName);
 }

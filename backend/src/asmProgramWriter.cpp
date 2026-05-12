@@ -35,7 +35,7 @@ int rewriteAstToAsmCode (backendContext_t* cntxt) {
     if (fclose(*cntxtAsmFile(cntxt)) != 0) {
         fprintf(stderr, "Error of closing file \"%s\"", *cntxtAsmFileName(cntxt));
         perror("");
-        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_OPENING_ASM_FILE,
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_CLOSING_ASM_FILE,
                         "Error of closing file \"%s\" in func %s, %s:%d\n",
                         *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
     }
@@ -78,7 +78,7 @@ int rewriteOpNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
         case opCOMMA:
             return rewriteOpCalcToAsmCode(cntxt, node, resultReg);
 
-        case opASSIGN: return rewriteOpAssignToAsmCode(cntxt, node, resultReg);
+        case opASSIGN: return rewriteOpAssignToAsmCode(cntxt, node);
         case opWHILE: return rewriteOpWhileToAsmCode(cntxt, node);
         case opIF: return rewriteOpIfToAsmCode(cntxt, node);
         case opIN: return rewriteOpInToAsmCode(cntxt, node);
@@ -171,7 +171,7 @@ int rewriteOpCalcToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
     return errorCode;
 }
 
-int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg) {
+int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
@@ -195,9 +195,6 @@ int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t
                         "Error: assign node does not have LEFT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-
-//    if (resultReg == LEFT)                                                            //FIXME
-///        fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", OP_REG_[LEFT], OP_REG_[RIGHT]);
 
     return errorCode;
 }

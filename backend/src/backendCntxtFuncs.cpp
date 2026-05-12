@@ -15,14 +15,17 @@
 #include "../include/backendConsts.h"
 #include "../include/structAccessFunctions.h"
 #include "../include/backendCntxtFuncs.h"
+#include "../include/instructionsEncoding.h"
 
-int backendCntxtCtor (backendContext_t* cntxt, const char* astFileName, const char* asmFileName, const char* srcFileName) {
+int backendCntxtCtor (backendContext_t* cntxt, const char* astFileName, const char* asmFileName,
+                                               const char* elfFileName, const char* srcFileName) {
     assert(cntxt);
     assert(astFileName);
     assert(asmFileName);
     assert(srcFileName);
 
     *cntxtAsmFileName(cntxt) = asmFileName;
+    *cntxtElfFileName(cntxt) = elfFileName;
 
     *cntxtSrcFile(cntxt) = (sourceFile_t*)calloc(1, sizeof(sourceFile_t));
     if (!*cntxtSrcFile(cntxt)) {
@@ -61,7 +64,7 @@ int backendCntxtCtor (backendContext_t* cntxt, const char* astFileName, const ch
     }
 
 
-    *cntxtProgramBuf(cntxt) = (int*)calloc(INIT_PROGRAM_BUF_CAPASITY, sizeof(int));
+    *cntxtProgramBuf(cntxt) = (uint8_t*)calloc(INIT_PROGRAM_BUF_CAPASITY, sizeof(uint8_t));
     if(!(*cntxtProgramBuf(cntxt))) {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_PROGRAM_BUF_CALLOC,
                         "Error program buf calloc in func %s, %s:%d\n",
@@ -119,9 +122,6 @@ void labelVectorDtor (labelVector_t* labelVector) {
     for (size_t numOfLabel = 0; numOfLabel < *labelVectorCapacity(labelVector); numOfLabel++) {
         label_t* curLabel = getLabel(labelVector, numOfLabel);
 
-        //if (*labelName(curLabel))           //FIXME ??
-        //    free(*labelName(curLabel));
-
         if (*intVectorBuf(labelPatchAddresses(curLabel)))
             free(*intVectorBuf(labelPatchAddresses(curLabel)));
     }
@@ -173,20 +173,20 @@ int addLabelAddressInCntxt (backendContext_t* cntxt, const char* newLabelName) {
     assert(cntxt);
     assert(newLabelName);
 
-    labelVector_t* labelVector = *cntxtLabelsArr(cntxt);
+    labelVector_t* labelVector = cntxtLabelsArr(cntxt);
 
     unsigned long long labelHash = getStringHash(newLabelName);
     label_t* searchedLabel = (label_t*)bsearch(&labelHash, *labelVectorArr(labelVector),
                                                *labelVectorSize(labelVector), sizeof(label_t),
-                                               bsearchLabelComparator);
+                                               bsearchLabelHashComparator);
 
-    if (searchedLabel && strcmp(newLabelName, *labelName(searchedLabel))) {
-        *labelHasAddress(label) = true;
+    if (searchedLabel && !strcmp(newLabelName, *labelName(searchedLabel))) {
+        *labelHasAddress(searchedLabel) = true;
         *labelAddress(searchedLabel) = *cntxtProgramBufSize(cntxt);
-        patchLabelWaitingAddresses(searchedLabel);
+        return patchLabelWaitingAddresses(cntxt, searchedLabel);
     }
     else {
-        label_t* newLabel = addNewLabelInCntxt(cntxt, newLabelName);
+        label_t* newLabel = addNewLabelInCntxt(cntxt, newLabelName, labelHash);
         if (!newLabel) {
             SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_LABELS_ARR_REALLOC,
                         "Error labels array realloc in func addNewLabelInCntxt, %s:%d\n",
@@ -203,7 +203,7 @@ label_t* addNewLabelInCntxt (backendContext_t* cntxt, const char* newLabelName, 
     assert(cntxt);
     assert(newLabelName);
 
-    labelVector_t* labelVector = *cntxtLabelsArr(cntxt);
+    labelVector_t* labelVector = cntxtLabelsArr(cntxt);
 
     if (*labelVectorSize(labelVector) >= *labelVectorCapacity(labelVector))
         if (!reallocLabelArr(labelVector))
@@ -217,24 +217,30 @@ label_t* addNewLabelInCntxt (backendContext_t* cntxt, const char* newLabelName, 
 
     qsort(*labelVectorArr(labelVector), *labelVectorSize(labelVector), sizeof(label_t), structLabelComparator);
 
-    return newLabel;
+    label_t* newLabelPtr = (label_t*)bsearch(&newlabelHash, *labelVectorArr(labelVector),
+                                             *labelVectorSize(labelVector), sizeof(label_t),
+                                             bsearchLabelHashComparator);
+
+    return newLabelPtr;
 }
 
 int structLabelComparator (const void* firstLabelPtr, const void* secondLabelPtr) {
-    assert(firstStruct);
-    assert(secondStruct);
+    assert(firstLabelPtr);
+    assert(secondLabelPtr);
 
-    const label_t* firstLable = (const label_t*)firstLabelPtr;
-    const label_t* secondLable = (const label_t*)secondLabelPtr;
+    const label_t* first = (const label_t*)firstLabelPtr;
+    const label_t* second = (const label_t*)secondLabelPtr;
 
-    return (int)(*labelHash(firstLable) - *labelHash(secondLable));
+    if (first->hash < second->hash) return -1;
+    if (first->hash > second->hash) return 1;
+    return 0;
 }
 
 labelVector_t* reallocLabelArr (labelVector_t* labelVector) {
     assert(labelVector);
 
     label_t* newLabelArr = (label_t*)realloc(*labelVectorArr(labelVector),
-                                                 *labelVectorCapacity(labelVector) * 2);
+                                            sizeof(label_t) * *labelVectorCapacity(labelVector) * 2);
     if (!newLabelArr)
         return NULL;
 
@@ -257,15 +263,17 @@ labelVector_t* reallocLabelArr (labelVector_t* labelVector) {
     return labelVector;
 }
 
-int patchLabelWaitingAddresses (label_t label) {
+int patchLabelWaitingAddresses (backendContext_t* cntxt, label_t* label) {
+    assert(cntxt);
     assert(label);
 
     intVector_t* addressesVector = labelPatchAddresses(label);
 
-    for (size_t curPatch = 0; curPatch < intVectorSize(addressesVector); curPatch++) {
-        int32_t patchOffset = (int)*labelAddress(label) - *intVectorElem(addressesVector, curPatch);
+    for (size_t curPatch = 0; curPatch < *intVectorSize(addressesVector); curPatch++) {
+        int32_t patchOffset = (int)*labelAddress(label) - *intVectorElem(addressesVector, curPatch)
+                                                        - OFFSET_LEN;
 
-        if (emit_32GivenPos(cntxt, (size_t)*intVectorElem(addressesVector, curPatch), patchOffset))
+        if (emit_32givenPos(cntxt, (size_t)*intVectorElem(addressesVector, curPatch), patchOffset))
             return *cntxtErrCode(cntxt);
 
         *intVectorElem(addressesVector, curPatch) = 0;
@@ -279,30 +287,34 @@ int patchCurLabel (backendContext_t* cntxt, const char* patchLabelName) {
     assert(cntxt);
     assert(patchLabelName);
 
-    labelVector_t* labelVector = *cntxtLabelsArr(cntxt);
+    labelVector_t* labelVector = cntxtLabelsArr(cntxt);
 
     unsigned long long labelHash = getStringHash(patchLabelName);
     label_t* searchedLabel = (label_t*)bsearch(&labelHash, *labelVectorArr(labelVector),
                                                *labelVectorSize(labelVector), sizeof(label_t),
-                                               bsearchLabelComparator);
+                                               bsearchLabelHashComparator);
 
-    if (searchedLabel && strcmp(patchLabelName, *labelName(searchedLabel))) {
+    if (searchedLabel && !strcmp(patchLabelName, *labelName(searchedLabel))) {
         if (*labelHasAddress(searchedLabel)) {
-            int32_t patchOffset = (int32_t)*labelAddress(searchedLabel) - (int32_t)*cntxtProgrambufSize(cntxt);
-            return emit_32givenPos(cntxt, *cntxtProgramBufSize(cntxt), patchOffset);
+            int32_t patchOffset = (int32_t)*labelAddress(searchedLabel) -
+                                  (int32_t)*cntxtProgramBufSize(cntxt) - OFFSET_LEN;
+            return emit_32CurPos(cntxt, patchOffset);
         }
-        else
-            return addWaitingPatchAddress(cntxt, searchedLabel);
+        else {
+            addWaitingPatchAddress(cntxt, searchedLabel);
+            return emit_32CurPos(cntxt, 0x00);
+        }
     }
     else {
-        label_t* newLabel = addNewLabelInCntxt(cntxt, patchLabelName);
+        label_t* newLabel = addNewLabelInCntxt(cntxt, patchLabelName, labelHash);
         if (!newLabel) {
             SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_LABELS_ARR_REALLOC,
                         "Error labels array realloc in func addNewLabelInCntxt, %s:%d\n",
                         __FILE__, __LINE__);
         }
         *labelHasAddress(newLabel) = false;
-        return addWaitingPatchAddress(cntxt, newLabel);
+        addWaitingPatchAddress(cntxt, newLabel);
+        return emit_32CurPos(cntxt, 0x00);
     }
 
     return BACKEND_SUCCESS;
@@ -316,7 +328,7 @@ int addWaitingPatchAddress (backendContext_t* cntxt, label_t* label) {
 
     if (*intVectorSize(addressesVector) >= *intVectorCapacity(addressesVector)) {
         int* newAddrArr = (int*)realloc(*intVectorBuf(addressesVector),
-                                        *intVectorCapacity(addressesVector) * 2);
+                                        sizeof(int) * *intVectorCapacity(addressesVector) * 2);
         if (!newAddrArr) {
             SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_PATCH_ARR_REALLOC,
                         "Error patch addresses array realloc in func %s, %s:%d\n",
@@ -326,8 +338,20 @@ int addWaitingPatchAddress (backendContext_t* cntxt, label_t* label) {
         *intVectorCapacity(addressesVector) *= 2;
         *intVectorBuf(addressesVector) = newAddrArr;
     }
-    *intVectorElem(addressesVector, *intVectorSize(addressesVector)) = *cntxtProgramBufSize(cntxt);
+    *intVectorElem(addressesVector, *intVectorSize(addressesVector)) = (int)*cntxtProgramBufSize(cntxt);
     *intVectorSize(addressesVector) += 1;
 
     return BACKEND_SUCCESS;
+}
+
+int bsearchLabelHashComparator(const void* keyPtr, const void* elementPtr) {
+    assert(keyPtr);
+    assert(elementPtr);
+
+    unsigned long long key = *(const unsigned long long*)keyPtr;
+    const label_t* label = (const label_t*)elementPtr;
+
+    if (key < label->hash) return -1;
+    if (key > label->hash) return 1;
+    return 0;
 }

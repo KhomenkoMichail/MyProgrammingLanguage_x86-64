@@ -7,8 +7,8 @@ const uint8_t STDLIB_CODE[] = "\xB8\x3C\x00\x00\x00\x48\x31\xFF\x0F\x05\x55\x48\
 
 const size_t STDLIB_SIZE = 241;
 
-const int32_t STDEXIT_OFFSET = 0x00;
-const int32_t STDIN_OFFSET = 0x77;
+const int32_t STDEXIT_OFFSET = 0x00 + 10;
+const int32_t STDIN_OFFSET = 0x77 + 5;
 const int32_t STDOUT_OFFSET = 0x0A;
 
 #endif

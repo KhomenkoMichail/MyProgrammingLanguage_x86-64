@@ -9,7 +9,7 @@ int rewriteOpNodeToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t r
 
 int rewriteOpCalcToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
 
-int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node, resultReg_t resultReg);
+int rewriteOpAssignToAsmCode (backendContext_t* cntxt, node_t* node);
 
 int rewriteOpWhileToAsmCode (backendContext_t* cntxt, node_t* node);
 
