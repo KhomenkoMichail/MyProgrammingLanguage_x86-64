@@ -29,8 +29,6 @@ int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regC
 
 int emitJMP (backendContext_t* cntxt, bool isCnd, opCode_t opCode, int32_t offset);
 
-int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, const char* patchLabelName);
-
 int emitSETcc (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg);
 
 int emitMovzxRR8(backendContext_t* cntxt, regCode_t destReg, regCode_t srcReg);
@@ -41,10 +39,12 @@ int emitBreakpoint (backendContext_t* cntxt, node_t* node);
 
 int emit_64CurPos (backendContext_t* cntxt, int32_t value);
 
-int emitCVTSI2SD(backendContext_t* cntxt, uint8_t dstXmmRegCode, regCode_t srcRegCode);
+int emitCVTSI2SD(backendContext_t* cntxt, xmmRegCode_t dstXmmRegCode, regCode_t srcRegCode);
 
-int emitSQRTSD(backendContext_t* cntxt, uint8_t dstXmmRegCode, uint8_t srcXmmRegCode);
+int emitSQRTSD(backendContext_t* cntxt, xmmRegCode_t dstXmmRegCode, xmmRegCode_t srcXmmRegCode);
 
-int emitCVTTSD2SI(backendContext_t* cntxt, regCode_t dstRegCode, uint8_t srcXmmRegCode);
+int emitCVTTSD2SI(backendContext_t* cntxt, regCode_t dstRegCode, xmmRegCode_t srcXmmRegCode);
+
+int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, bool isCnd, const char* patchLabelName);
 
 #endif

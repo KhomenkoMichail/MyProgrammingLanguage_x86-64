@@ -144,11 +144,15 @@ int emit_32givenPos (backendContext_t* cntxt, size_t givenBufPos, uint32_t value
 
 int emitRet (backendContext_t* cntxt) {
     assert(cntxt);
+
+    fprintf(*cntxtAsmFile(cntxt), "ret\n");
     return emitByte(cntxt, opCodeRET);
 }
 
 int emitCqo (backendContext_t* cntxt) {
     assert(cntxt);
+
+    fprintf(*cntxtAsmFile(cntxt), "cqo\n");
 
     emitByte(cntxt, REX_W_BYTE);
     emitByte(cntxt, opCodeCQO);
@@ -161,6 +165,8 @@ int emitPushReg (backendContext_t* cntxt, regCode_t regCode) {
     if (regCode >= R8)
         emitByte(cntxt, REX_B_BYTE);
 
+    fprintf(*cntxtAsmFile(cntxt), "push %s\n", regName(cntxt, regCode));
+
     return emitByte(cntxt, (uint8_t)(opCodePUSH + (regCode & 7)));
 }
 
@@ -169,11 +175,23 @@ int emitPopReg (backendContext_t* cntxt, regCode_t regCode) {
     if (regCode >= R8)
         emitByte(cntxt, REX_B_BYTE);
 
+    fprintf(*cntxtAsmFile(cntxt), "pop %s\n", regName(cntxt, regCode));
+
     return emitByte(cntxt, (uint8_t)(opCodePOP + (regCode & 7)));
 }
 
 int emitOpRegReg (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg, regCode_t srcReg) {
     assert(cntxt);
+
+    switch (opCode) {
+        case opCodeADD: fprintf(*cntxtAsmFile(cntxt), "add ");   break;
+        case opCodeSUB: fprintf(*cntxtAsmFile(cntxt), "sub ");   break;
+        case opCodeIMUL: fprintf(*cntxtAsmFile(cntxt), "imul "); break;
+        case opCodeTEST: fprintf(*cntxtAsmFile(cntxt), "test "); break;
+        case opCodeCMP: fprintf(*cntxtAsmFile(cntxt), "cmp ");   break;
+        default: break;
+    }
+    fprintf(*cntxtAsmFile(cntxt), "%s, %s\n", regName(cntxt, destReg), regName(cntxt, srcReg));
 
     if (opCode == opCodeIMUL) {
         emitRex64(cntxt, destReg, srcReg, NO_REG);
@@ -193,6 +211,8 @@ int emitOpRegReg (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg, r
 int emitIdiv (backendContext_t* cntxt, regCode_t srcReg) {
     assert(cntxt);
 
+    fprintf(*cntxtAsmFile(cntxt), "idiv %s\n", regName(cntxt, srcReg));
+
     emitRex64(cntxt, NO_REG, srcReg, NO_REG);
     emitByte(cntxt, opCodeIDIV);
     emitModRM(cntxt, REG_REG, IDIV_EXTRA_OPCODE, srcReg);
@@ -202,6 +222,23 @@ int emitIdiv (backendContext_t* cntxt, regCode_t srcReg) {
 
 int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regCode_t srcReg, int32_t disp) {
     assert(cntxt);
+
+    switch (modARGS) {
+        case REG_REG:
+            fprintf(*cntxtAsmFile(cntxt), "mov %s, %s\n", regName(cntxt, destReg), regName(cntxt, srcReg));
+            break;
+        case REG_CONST:
+            fprintf(*cntxtAsmFile(cntxt), "mov %s, %d\n", regName(cntxt, destReg), disp);
+            break;
+        case REG_MEM:
+            fprintf(*cntxtAsmFile(cntxt), "mov %s, [%s + %d]\n", regName(cntxt, destReg), regName(cntxt, srcReg), disp);
+            break;
+        case MEM_REG:
+            fprintf(*cntxtAsmFile(cntxt), "mov [%s + %d], %s\n", regName(cntxt, destReg), disp, regName(cntxt, srcReg));
+            break;
+        default:
+            break;
+    }
 
     bool direction = (modARGS == REG_MEM);
 
@@ -253,9 +290,19 @@ int emitJMP (backendContext_t* cntxt, bool isCnd, opCode_t opCode, int32_t offse
     return *cntxtErrCode(cntxt);
 }
 
-int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, const char* patchLabelName) {
+int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, bool isCnd, const char* patchLabelName) {
     assert(cntxt);
     assert(patchLabelName);
+
+    switch (opCode) {
+        case opCodeCALL: fprintf(*cntxtAsmFile(cntxt), "call %s\n", patchLabelName); break;
+        case opCodeJMP:  fprintf(*cntxtAsmFile(cntxt), "jmp %s\n", patchLabelName);  break;
+        case opCodeJZ:   fprintf(*cntxtAsmFile(cntxt), "jz %s\n", patchLabelName);  break;
+        default: break;
+    }
+
+    if (isCnd)
+        emitByte(cntxt, ESCAPE_PREFIX);
 
     emitByte(cntxt, opCode);
     patchCurLabel(cntxt, patchLabelName);
@@ -265,6 +312,17 @@ int emitPatchCALLorJMP (backendContext_t* cntxt, opCode_t opCode, const char* pa
 
 int emitSETcc (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg) {
     assert(cntxt);
+
+    switch (opCode) {
+        case opCodeSETe:  fprintf(*cntxtAsmFile(cntxt), "sete %s\n", regLowByteName(cntxt, destReg));         break;
+        case opCodeSETne: fprintf(*cntxtAsmFile(cntxt), "setne %s\n", regLowByteName(cntxt, destReg)); break;
+        case opCodeSETl:  fprintf(*cntxtAsmFile(cntxt), "setl %s\n", regLowByteName(cntxt, destReg));  break;
+        case opCodeSETg:  fprintf(*cntxtAsmFile(cntxt), "setg %s\n", regLowByteName(cntxt, destReg));  break;
+        case opCodeSETle: fprintf(*cntxtAsmFile(cntxt), "setle %s\n", regLowByteName(cntxt, destReg)); break;
+        case opCodeSETge: fprintf(*cntxtAsmFile(cntxt), "setge %s\n", regLowByteName(cntxt, destReg)); break;
+        default:
+            break;
+    }
 
     emitByte(cntxt, ESCAPE_PREFIX);
     emitByte(cntxt, opCode);
@@ -276,6 +334,8 @@ int emitSETcc (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg) {
 
 int emitMovzxRR8(backendContext_t* cntxt, regCode_t destReg, regCode_t srcReg) {
     assert(cntxt);
+
+    fprintf(*cntxtAsmFile(cntxt), "movzx %s, %s\n", regName(cntxt, destReg), regLowByteName(cntxt, srcReg));
 
     emitRex64(cntxt, destReg, srcReg, NO_REG);
     emitByte(cntxt, ESCAPE_PREFIX);
@@ -290,15 +350,20 @@ int emitMovzxRR8(backendContext_t* cntxt, regCode_t destReg, regCode_t srcReg) {
 int emitAluRegConst(backendContext_t* cntxt, regCode_t regCode, int32_t imm, aluOpCode_t aluOpCode) {
     assert(cntxt);
 
+    if (aluOpCode == aluSUB)
+        fprintf(*cntxtAsmFile(cntxt), "sub %s, %d\n", regName(cntxt, regCode), imm);
+    if (aluOpCode == aluADD)
+        fprintf(*cntxtAsmFile(cntxt), "add %s, %d\n", regName(cntxt, regCode), imm);
+
     emitRex64(cntxt, NO_REG, regCode, NO_REG);
 
     if (imm >= -128 && imm <= 127) {
-        emitByte(cntxt, 0x83);                      //FIXME
+        emitByte(cntxt, opCodeALU_R_IMM8);
         emitModRM(cntxt, REG_REG, (uint8_t)aluOpCode, regCode);
         emitByte(cntxt, (uint8_t)imm);
     }
     else {
-        emitByte(cntxt, 0x81);                      //FIXME
+        emitByte(cntxt, opCodeALU_R_IMM32);
         emitModRM(cntxt, REG_REG, (uint8_t)aluOpCode, regCode);
         emit_32CurPos(cntxt, (int32_t)imm);
     }
@@ -325,10 +390,12 @@ int emitBreakpoint (backendContext_t* cntxt, node_t* node) {
     return emitByte(cntxt, opCodeBREAKPOINT);
 }
 
-int emitCVTSI2SD(backendContext_t* cntxt, uint8_t dstXmmRegCode, regCode_t srcRegCode) {
+int emitCVTSI2SD(backendContext_t* cntxt, xmmRegCode_t dstXmmRegCode, regCode_t srcRegCode) {
     assert(cntxt);
 
-    //fprintf(*cntxtByteFile(cntxt), "cvtsi2sd xmm0, %s\n", OP_REG_[LEFT]);    //FIXME
+    fprintf(*cntxtAsmFile(cntxt), "cvtsi2sd %s, %s\n", xmmArr[dstXmmRegCode].name,
+                                                       regName(cntxt, srcRegCode));
+
     emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
     emitRex64(cntxt, NO_REG, srcRegCode, NO_REG);
     emitByte(cntxt, ESCAPE_PREFIX);
@@ -338,10 +405,12 @@ int emitCVTSI2SD(backendContext_t* cntxt, uint8_t dstXmmRegCode, regCode_t srcRe
     return *cntxtErrCode(cntxt);
 }
 
-int emitSQRTSD(backendContext_t* cntxt, uint8_t dstXmmRegCode, uint8_t srcXmmRegCode) {
+int emitSQRTSD(backendContext_t* cntxt, xmmRegCode_t dstXmmRegCode, xmmRegCode_t srcXmmRegCode) {
     assert(cntxt);
 
-    //fprintf(*cntxtByteFile(cntxt), "sqrtsd xmm0, xmm0\n");
+    fprintf(*cntxtAsmFile(cntxt), "sqrtsd %s, %s\n", xmmArr[dstXmmRegCode].name,
+                                                     xmmArr[srcXmmRegCode].name);
+
     emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
     emitByte(cntxt, ESCAPE_PREFIX);
     emitByte(cntxt, opCodeSQRTSD);
@@ -350,14 +419,16 @@ int emitSQRTSD(backendContext_t* cntxt, uint8_t dstXmmRegCode, uint8_t srcXmmReg
     return *cntxtErrCode(cntxt);
 }
 
-int emitCVTTSD2SI(backendContext_t* cntxt, regCode_t dstRegCode, uint8_t srcXmmRegCode) {
+int emitCVTTSD2SI(backendContext_t* cntxt, regCode_t dstRegCode, xmmRegCode_t srcXmmRegCode) {
     assert(cntxt);
 
-    //fprintf(*cntxtByteFile(cntxt), "cvttsd2si %s, xmm0\n", OP_REG_[resultReg]); //FIXME
+    fprintf(*cntxtAsmFile(cntxt), "cvttsd2si %s, %s\n", regName(cntxt, dstRegCode),
+                                                        xmmArr[srcXmmRegCode].name);
+
     emitByte(cntxt, DOUBLE_PRECISION_PREFIX);
     emitRex64(cntxt, dstRegCode, NO_REG, NO_REG);
     emitByte(cntxt, ESCAPE_PREFIX);
-    emitByte(cntxt, opCodeCVVTSD2SI);
+    emitByte(cntxt, opCodeCVTTSD2SI);
     emitModRM(cntxt, REG_REG, dstRegCode, srcXmmRegCode);
 
     return *cntxtErrCode(cntxt);

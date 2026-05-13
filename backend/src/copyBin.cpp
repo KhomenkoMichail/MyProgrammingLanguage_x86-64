@@ -4,7 +4,6 @@
 int main(int argc, const char* argv[]) {
     if (argc != 3) return printf("Usage: %s input.bin output.h\n", argv[0]), 1;
 
-
     const char* inputFileName = argv[1];
     const char* outputFileName = argv[2];
 
@@ -26,7 +25,6 @@ int main(int argc, const char* argv[]) {
     fprintf(outputFile, "#ifndef STDLIB_HEX_H\n");
     fprintf(outputFile, "#define STDLIB_HEX_H\n\n");
     fprintf(outputFile, "#include <stdint.h>\n\n");
-//    fprintf(outputFile, "#include <stddef.h>\n\n");
 
     fprintf(outputFile, "const uint8_t STDLIB_CODE[] = \"");
 

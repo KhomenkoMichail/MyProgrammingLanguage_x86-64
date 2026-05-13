@@ -27,6 +27,12 @@ const char* regName (backendContext_t* cntxt, regCode_t regCode) {
     return (cntxt->regsArr[regCode]).name;
 }
 
+const char* regLowByteName (backendContext_t* cntxt, regCode_t regCode) {
+    assert(cntxt);
+
+    return (cntxt->regsArr[regCode]).lowByteRegName;
+}
+
 sourceFile_t** cntxtSrcFile (backendContext_t* cntxt) {
     assert(cntxt);
     return &(cntxt->sourceFile);

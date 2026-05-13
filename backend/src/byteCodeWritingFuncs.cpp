@@ -21,7 +21,6 @@
 #include "../include/instructionsEncoding.h"
 #include "../include/backendCntxtFuncs.h"
 #include "../include/byteCodeWritingFuncs.h"
-#include "../include/asmProgramWriter.h"
 #include "../include/backendDSL.h"
 
 int writeElfFile(backendContext_t* cntxt) {
@@ -87,6 +86,7 @@ int writeElfFile(backendContext_t* cntxt) {
     return BACKEND_SUCCESS;
 }
 
+/*
 int executeBuffer (backendContext_t* cntxt) {
     assert(cntxt);
 
@@ -106,18 +106,14 @@ int executeBuffer (backendContext_t* cntxt) {
     bufFunc_t bufCode = (bufFunc_t)(*cntxtProgramBuf(cntxt));
     int result = bufCode();
 
-    printf("bufCode returned: %d\n", result);
-
-    if (mprotect((void*)pageAlignedAddr, protectSize, PROT_READ | PROT_WRITE) == -1) {
-        perror("mprotect restore failed");
-    }
-
     return result;
-}
+}*/
 
-int astToByteCode (backendContext_t* cntxt) {   //FIXME
+int astToAsmAndByteCode (backendContext_t* cntxt) {
     assert(cntxt);
-/*
+
+    *cntxtAsmFile(cntxt) = fopen(*cntxtAsmFileName(cntxt), "w");
+
     if (!(*cntxtAsmFile(cntxt))) {
         fprintf(stderr, "Error of opening file \"%s\"", *cntxtAsmFileName(cntxt));
         perror("");
@@ -125,11 +121,12 @@ int astToByteCode (backendContext_t* cntxt) {   //FIXME
                         "Error of opening file \"%s\" in func %s, %s:%d\n",
                         *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
     }
-    fprintfAsmFileHeader(*cntxtAsmFile(cntxt));
-*/
+
+    fprintf(*cntxtAsmFile(cntxt), "section .text\nglobal _start\n\n_start:\n\n");
+
     addStdLibInBuffer(cntxt);
     nodeToByteCode(cntxt, *treeRoot(*cntxtTree(cntxt)), RAX);
-/*
+
     fprintf(*cntxtAsmFile(cntxt), "%%include \"./backend/src/stdlib.asm\"\n");
 
     if (fclose(*cntxtAsmFile(cntxt)) != 0) {
@@ -139,15 +136,16 @@ int astToByteCode (backendContext_t* cntxt) {   //FIXME
                         "Error of closing file \"%s\" in func %s, %s:%d\n",
                         *cntxtAsmFileName(cntxt), __func__, __FILE__, __LINE__);
     }
-*/
-    return writeElfFile(cntxt);
+
+    writeElfFile(cntxt);
+    return *cntxtErrCode(cntxt);
 }
 
 int nodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(node);
     assert(cntxt);
 
-//    fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
+    fprintfCommentsToAsm(node, *cntxtSrcFile(cntxt), *cntxtAsmFile(cntxt));
 
     switch (*nodeType(node)) {
         case typeNumber:
@@ -186,8 +184,7 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
         case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
 
         case opHLT:
-//            fprintf(*cntxtAsmFile(cntxt), "call stdExit\n");
-            JMP_PATCH_("stdExit");
+            CALL_("stdExit");
             return *cntxtErrCode(cntxt);
 
 
@@ -246,15 +243,9 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
     }
 
     switch (*nodeOpCode(node)) {
-        case (opADD):
-            ADD_RR_(RAX, RBX);
-            break;
-        case (opSUB):
-            SUB_RR_(RAX, RBX);
-            break;
-        case (opMUL):
-            IMUL_RR_(RAX, RBX);
-            break;
+        case (opADD): ADD_RR_(RAX, RBX);  break;
+        case (opSUB): SUB_RR_(RAX, RBX);  break;
+        case (opMUL): IMUL_RR_(RAX, RBX); break;
         case (opDIV):
             if (*regIsUsed(cntxt, RDX))
                 PUSHR_(RDX);
@@ -264,8 +255,8 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
 
             if (*regIsUsed(cntxt, RDX))
                 POPR_(RDX);
-        default:
-            break;
+
+        default: break;
     }
 
     if (resultReg == RBX)
@@ -302,14 +293,19 @@ int opAssignToByteCode (backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
-
 int opWhileToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
     (*cntxtWhileCounter(cntxt))++;
 
-    size_t whileStartBufPos = *cntxtProgramBufSize(cntxt);        //while:
+    char WHILE[IF_WHILE_LABEL_LEN] = {};
+    snprintf(WHILE, IF_WHILE_LABEL_LEN, "while%u", *cntxtWhileCounter(cntxt));
+
+    char ENDWHILE[IF_WHILE_LABEL_LEN] = {};
+    snprintf(ENDWHILE, IF_WHILE_LABEL_LEN, "endwhile%u", *cntxtWhileCounter(cntxt));
+
+    LABEL_(WHILE);
 
     if (*nodeLeft(node)) {
         nodeToByteCode(cntxt, *nodeLeft(node), RAX);
@@ -317,19 +313,13 @@ int opWhileToByteCode (backendContext_t* cntxt, node_t* node) {
     }
 
     TEST_RR_(RAX, RAX);
-
-    JZ_(0x00);
-    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
+    JZ_(ENDWHILE);
 
     if (*nodeRight(node))
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
 
-    //emitJMPorCALL(cntxt, false, opCodeJMP, whileStartBufPos);   //JMP while
-    int32_t whileOffset = (int32_t)(whileStartBufPos - *cntxtProgramBufSize(cntxt));
-    JMP_OFFSET_(whileOffset);
-
-    int32_t jzOffset = (int32_t)(*cntxtProgramBufSize(cntxt) - jzOffsetBufPos - OFFSET_LEN);
-    emit_32givenPos(cntxt, jzOffsetBufPos, (uint32_t)jzOffset);
+    JMP_(WHILE);
+    LABEL_(ENDWHILE);
 
     return *cntxtErrCode(cntxt);
 }
@@ -340,6 +330,9 @@ int opIfToByteCode (backendContext_t* cntxt, node_t* node) {
 
     (*cntxtIfCounter(cntxt))++;
 
+    char ENDIF[IF_WHILE_LABEL_LEN] = {};
+    snprintf(ENDIF, IF_WHILE_LABEL_LEN, "endif%u", *cntxtIfCounter(cntxt));
+
     if (*nodeLeft(node)) {
         nodeToByteCode(cntxt, *nodeLeft(node), RAX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
@@ -347,14 +340,12 @@ int opIfToByteCode (backendContext_t* cntxt, node_t* node) {
 
     TEST_RR_(RAX, RAX);
 
-    JZ_(0x00);
-    size_t jzOffsetBufPos = *cntxtProgramBufSize(cntxt) - OFFSET_LEN;   //FIXME
+    JZ_(ENDIF);
 
     if (*nodeRight(node))
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
 
-    int32_t jzOffset = (int32_t)(*cntxtProgramBufSize(cntxt) - jzOffsetBufPos - OFFSET_LEN);
-    emit_32givenPos(cntxt, jzOffsetBufPos, (uint32_t)jzOffset);
+    LABEL_(ENDIF);
 
     return *cntxtErrCode(cntxt);
 }
@@ -363,11 +354,11 @@ int opInToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-    uint32_t pushedRegsMask = pushSavedRegsByteCode(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
 
     CALL_("stdIn");
 
-    popSavedRegsByteCode(cntxt, pushedRegsMask);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     if (*nodeLeft(node)) {
         varPos_t varPos = getVarPos(cntxt, *nodeLeft(node));
@@ -384,7 +375,6 @@ int opInToByteCode (backendContext_t* cntxt, node_t* node) {
 
     return *cntxtErrCode(cntxt);
 }
-
 
 int opOutToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
@@ -403,15 +393,14 @@ int opOutToByteCode (backendContext_t* cntxt, node_t* node) {
                 __func__, __FILE__, __LINE__);
     }
 
-    uint32_t pushedRegsMask = pushSavedRegsByteCode(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
 
     CALL_("stdOut");
 
-    popSavedRegsByteCode(cntxt, pushedRegsMask);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     return *cntxtErrCode(cntxt);
 }
-
 
 int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
@@ -421,13 +410,21 @@ int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
         nodeToByteCode(cntxt, *nodeLeft(node), RAX);
 
     freeScopeRegs(cntxt);
-    popSavedRegsByteCode(cntxt, *curScopePushedRegsMask(*cntxtTree(cntxt)));
+    popSavedRegs(cntxt, *curScopePushedRegsMask(*cntxtTree(cntxt)));
 
     MOV_RR_(RSP, RBP);
     POPR_(RBP);
     RET;
 
     return *cntxtErrCode(cntxt);
+}
+
+void freeScopeRegs (backendContext_t* cntxt) {
+    assert(cntxt);
+
+    for (size_t curReg = 0; curReg < NUM_OF_REGS; curReg++)
+        if (*regIsUsed(cntxt, (regCode_t)curReg) && (regSaveDecl(cntxt, (regCode_t)curReg) != specialSaved))
+            *regIsUsed(cntxt, (regCode_t)curReg) = false;
 }
 
 int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
@@ -485,15 +482,14 @@ int idNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
     if (searchedId)
         return varNodeToByteCode(cntxt, node, resultReg);
     else
-        return funcCallNodeToByteCode(cntxt, node, resultReg);
+        return callNodeToByteCode(cntxt, node, resultReg);
 }
 
 int funcBodyToByteCode(backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
-    addLabelAddressInCntxt(cntxt, *nodeIdentifierName(node));
-    if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
+    LABEL_(*nodeIdentifierName(node));
 
     PUSHR_(RBP);
     MOV_RR_(RBP, RSP);
@@ -506,10 +502,10 @@ int funcBodyToByteCode(backendContext_t* cntxt, node_t* node) {
 
     enterNewScope(*cntxtTree(cntxt));
 
-    *curScopePushedRegsMask(*cntxtTree(cntxt)) = pushSavedRegsByteCode(cntxt, calleeSaved);
+    *curScopePushedRegsMask(*cntxtTree(cntxt)) = pushSavedRegs(cntxt, calleeSaved);
 
     if (*nodeLeft(node)) {
-        gettingParamsToByteCode(cntxt, *nodeLeft(node));
+        getFuncArgs(cntxt, *nodeLeft(node));
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
     }
 
@@ -526,16 +522,16 @@ int funcBodyToByteCode(backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
-int gettingParamsToByteCode (backendContext_t* cntxt, node_t* node) {
+int getFuncArgs (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
 
     if(*nodeLeft(node) && *nodeRight(node)) {
-        gettingParamsToByteCode(cntxt, *nodeLeft(node));
+        getFuncArgs(cntxt, *nodeLeft(node));
 
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
-        gettingParamsToByteCode(cntxt, *nodeRight(node));
+        getFuncArgs(cntxt, *nodeRight(node));
     }
     else
         addIdToCurrentScope(*cntxtTree(cntxt), nodeVarName(node), idPARAM);
@@ -543,13 +539,13 @@ int gettingParamsToByteCode (backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
-int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
+int callNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg) {
     assert(cntxt);
     assert(node);
 
     int numOfFuncParams = 0;
 
-    uint32_t pushedRegsMask = pushSavedRegsByteCode(cntxt, callerSaved);
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
 
     if (*nodeLeft(node))
         numOfFuncParams = passingParamsToByteCode(cntxt, *nodeLeft(node));
@@ -564,7 +560,7 @@ int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t res
     if (resultReg == RBX)
         MOV_RR_(RBX, RAX);
 
-    popSavedRegsByteCode(cntxt, pushedRegsMask);
+    popSavedRegs(cntxt, pushedRegsMask);
 
     return *cntxtErrCode(cntxt);
 }
@@ -651,14 +647,14 @@ int opSqrtToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
                            __func__, __FILE__, __LINE__);
     }
 
-    CVTSI2SD_(XMM0_CODE, RAX);
-    SQRTSD_(XMM0_CODE, XMM0_CODE);
-    CVTTSD2SI_(resultReg, XMM0_CODE);
+    CVTSI2SD_(XMM0, RAX);
+    SQRTSD_(XMM0, XMM0);
+    CVTTSD2SI_(resultReg, XMM0);
 
     return *cntxtErrCode(cntxt);
 }
 
-uint32_t pushSavedRegsByteCode (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
+uint32_t pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl) {
     assert(cntxt);
 
     uint32_t pushedRegsMask = 0;
@@ -676,7 +672,7 @@ uint32_t pushSavedRegsByteCode (backendContext_t* cntxt, regSaveDecl_t saveDecl)
     return pushedRegsMask;
 }
 
-int popSavedRegsByteCode (backendContext_t* cntxt, uint32_t pushedRegsMask) {
+int popSavedRegs (backendContext_t* cntxt, uint32_t pushedRegsMask) {
     assert(cntxt);
 
     for (int curReg = NUM_OF_REGS - 1; curReg >= 0; curReg--) {
@@ -694,7 +690,7 @@ int popSavedRegsByteCode (backendContext_t* cntxt, uint32_t pushedRegsMask) {
 int addStdLibInBuffer (backendContext_t* cntxt) {
     assert(cntxt);
 
-    JMP_PATCH_("main");
+    JMP_("main");
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     addLabelAddressInCntxt(cntxt, "stdExit");
@@ -723,4 +719,14 @@ int addStdLibInBuffer (backendContext_t* cntxt) {
     *cntxtProgramBufSize(cntxt) += STDLIB_SIZE;
 
     return BACKEND_SUCCESS;
+}
+
+int findFreeReg (backendContext_t* cntxt) {
+    assert(cntxt);
+
+    for (int curReg = 0; curReg < NUM_OF_REGS; curReg++)
+        if (!(*regIsUsed(cntxt, (regCode_t)curReg)))
+            return curReg;
+
+    return NOT_IN_REG;
 }

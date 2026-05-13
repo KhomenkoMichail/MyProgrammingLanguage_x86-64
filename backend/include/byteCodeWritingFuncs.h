@@ -1,9 +1,10 @@
 #ifndef BYTE_CODE_WRITITNG_FUNCS_H
 #define BYTE_CODE_WRITITNG_FUNCS_H
 
-int astToByteCode (backendContext_t* cntxt);   //FIXME
 
-int executeBuffer (backendContext_t* cntxt);
+int astToAsmAndByteCode (backendContext_t* cntxt);
+
+//int executeBuffer (backendContext_t* cntxt);
 
 int nodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg);
 
@@ -29,9 +30,9 @@ int idNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
 
 int funcBodyToByteCode(backendContext_t* cntxt, node_t* node);
 
-int gettingParamsToByteCode (backendContext_t* cntxt, node_t* node);
+int getFuncArgs (backendContext_t* cntxt, node_t* node);
 
-int funcCallNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg);
+int callNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg);
 
 int passingParamsToByteCode (backendContext_t* cntxt, node_t* node);
 
@@ -41,12 +42,16 @@ int varNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultRe
 
 int opSqrtToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg);
 
-uint32_t pushSavedRegsByteCode (backendContext_t* cntxt, regSaveDecl_t saveDecl);
+uint32_t pushSavedRegs (backendContext_t* cntxt, regSaveDecl_t saveDecl);
 
-int popSavedRegsByteCode (backendContext_t* cntxt, uint32_t pushedRegsMask);
+int popSavedRegs (backendContext_t* cntxt, uint32_t pushedRegsMask);
 
 int addStdLibInBuffer (backendContext_t* cntxt);
 
 int writeElfFile(backendContext_t* cntxt);
+
+void freeScopeRegs (backendContext_t* cntxt);
+
+int findFreeReg (backendContext_t* cntxt);
 
 #endif

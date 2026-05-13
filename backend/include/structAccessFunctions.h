@@ -7,6 +7,8 @@ regSaveDecl_t regSaveDecl (backendContext_t* cntxt, regCode_t regCode);
 
 const char* regName (backendContext_t* cntxt, regCode_t regCode);
 
+const char* regLowByteName (backendContext_t* cntxt, regCode_t regCode);
+
 sourceFile_t** cntxtSrcFile (backendContext_t* cntxt);
 
 const char** cntxtElfFileName (backendContext_t* cntxt);

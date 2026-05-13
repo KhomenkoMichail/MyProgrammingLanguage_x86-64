@@ -29,11 +29,15 @@
 #define IDIV_(reg) emitIdiv(cntxt, reg)
 
 
-#define JMP_PATCH_(label) emitPatchCALLorJMP(cntxt, opCodeJMP, label)
-#define JMP_OFFSET_(offset) emitJMP(cntxt, false, opCodeJMP, offset)
-#define JZ_(offset) emitJMP(cntxt, true, opCodeJZ, offset)
-#define CALL_(label) emitPatchCALLorJMP(cntxt, opCodeCALL, label)
+#define JMP_(label)  emitPatchCALLorJMP(cntxt, opCodeJMP, false, label)
+#define JZ_(label)   emitPatchCALLorJMP(cntxt, opCodeJZ, true, label);
+#define CALL_(label) emitPatchCALLorJMP(cntxt, opCodeCALL, false, label)
 
+#define JMP_OFFSET_(offset) emitByte(cntxt, opCodeJMP);\
+                            emit_32CurPos(cntxt, offset)
+
+#define LABEL_(name) fprintf(*cntxtAsmFile(cntxt), "%s:\n", name);\
+                      addLabelAddressInCntxt(cntxt, name);
 
 #define RET emitRet(cntxt)
 

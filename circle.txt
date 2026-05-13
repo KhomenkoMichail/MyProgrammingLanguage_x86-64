@@ -1,0 +1,23 @@
+atti() chal
+    wyaaaaaa r wuahh aohwawh!
+    haaag "r"!
+
+    wyaaaaaa x wuahh aohwawh!
+    wyaaaaaa y wuahh aohwawh!
+
+    awa (y issh 100) {
+        x wuahh aohwawh;
+        awa (x issh 100) {
+            yaag (x muaarga x + y muaarga y issh r muaarga r)
+                draw 0;
+            yaag (x muaarga x + y muaarga y ~kerri~uma r muaarga r)
+                draw 1;
+
+            x wuahh x + 1;
+        }
+        draw '\n'
+        y wuahh y + 1;
+    }
+
+    mu!
+ur-oh!

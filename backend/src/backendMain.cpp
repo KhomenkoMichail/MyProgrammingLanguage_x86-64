@@ -8,7 +8,6 @@
 #include "../include/backendConsts.h"
 #include "../include/structAccessFunctions.h"
 #include "../include/backendCntxtFuncs.h"
-#include "../include/asmProgramWriter.h"
 #include "../include/byteCodeWritingFuncs.h"
 
 
@@ -28,13 +27,12 @@ int main (int argc, const char* argv[]) {
         return *cntxtErrCode(&cntxt);
     }
 
-    if (astToByteCode(&cntxt) != BACKEND_SUCCESS) {
+    if (astToAsmAndByteCode(&cntxt) != BACKEND_SUCCESS) {
         reportBackendError(&cntxt);
         backendCntxtDtor(&cntxt);
         return *cntxtErrCode(&cntxt);
     };
 
-    //executeBuffer(&cntxt);
     backendCntxtDtor(&cntxt);
 
     return BACKEND_SUCCESS;

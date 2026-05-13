@@ -34,13 +34,6 @@ enum backendErr_t {
     BACKEND_ERR_CLOSING_ELF_FILE = 19,
 };
 
-enum resultReg_t {
-    LEFT  = 0,
-    RIGHT = 3,
-};
-
-const char* const OP_REG_[2] = { "rax", "rbx" };
-
 enum regCode_t {
     NO_REG = -1,
     RAX = 0,
@@ -71,57 +64,94 @@ enum regSaveDecl_t {
 
 struct regInfo_t {
     const char* name;
+    const char* lowByteRegName;
     bool isUsed;
     regSaveDecl_t regSaveDecl;
 };
 
-const regInfo_t INIT_REGS_ARRAY[] = { { "rax", true,  specialSaved },
-                                      { "rcx", false, callerSaved  },
-                                      { "rdx", false, callerSaved  },
-                                      { "rbx", true,  specialSaved },
-                                      { "rsp", true,  specialSaved },
-                                      { "rbp", true,  specialSaved },
-                                      { "rsi", false, callerSaved  },
-                                      { "rdi", false, callerSaved  },
-                                      { "r8",  false, callerSaved  },
-                                      { "r9",  false, callerSaved  },
-                                      { "r10", false, callerSaved  },
-                                      { "r11", false, callerSaved  },
-                                      { "r12", false, calleeSaved  },
-                                      { "r13", false, calleeSaved  },
-                                      { "r14", false, calleeSaved  },
-                                      { "r15", false, calleeSaved  }, };
+const regInfo_t INIT_REGS_ARRAY[] = { { "rax", "al",   true,  specialSaved },
+                                      { "rcx", "cl",   false, callerSaved  },
+                                      { "rdx", "dl",   false, callerSaved  },
+                                      { "rbx", "bl",   true,  specialSaved },
+                                      { "rsp", "spl",  true,  specialSaved },
+                                      { "rbp", "bpl",  true,  specialSaved },
+                                      { "rsi", "sil",  false, callerSaved  },
+                                      { "rdi", "dil",  false, callerSaved  },
+                                      { "r8",  "r8b",  false, callerSaved  },
+                                      { "r9",  "r9b",  false, callerSaved  },
+                                      { "r10", "r10b", false, callerSaved  },
+                                      { "r11", "r11b", false, callerSaved  },
+                                      { "r12", "r12b", false, calleeSaved  },
+                                      { "r13", "r13b", false, calleeSaved  },
+                                      { "r14", "r14b", false, calleeSaved  },
+                                      { "r15", "r15b", false, calleeSaved  }, };
 
 const int NUM_OF_REGS = sizeof(INIT_REGS_ARRAY) / sizeof(regInfo_t);
 
+/*
 enum opCode_t {
     opCodeADD = 0x01,
     opCodeSUB = 0x29,
     opCodeCMP = 0x39,
-    opCodeTEST = 0x85,
-    opCodeIMUL = 0xAF,
+    opCodeALU_R_IMM8 = 0x83,
+    opCodeALU_R_IMM32 = 0x81,
     opCodeJZ = 0x84,
+    opCodeTEST = 0x85,
+    opCodeMOVcleanDir = 0x89,
+    opCodeIMUL = 0xAF,
     opCodeRET = 0xC3,
     opCodeCQO = 0x99,
     opCodePUSH = 0x50,
     opCodePOP = 0x58,
     opCodeIDIV = 0xF7,
     opCodeMOVsetDir = 0x8B,
-    opCodeMOVcleanDir = 0x89,
     opCodeMOVregConst = 0xB8,
     opCodeJMP = 0xE9,
     opCodeSETe = 0x94,
     opCodeSETne = 0x95,
     opCodeSETl = 0x9C,
-    opCodeSETg = 0x9F,
-    opCodeSETle = 0x9E,
     opCodeSETge = 0x9D,
+    opCodeSETle = 0x9E,
+    opCodeSETg = 0x9F,
     opCodeMOVZXrr8 = 0xB6,
     opCodeCALL = 0xE8,
     opCodeCVTSI2SD = 0x2A,
     opCodeSQRTSD = 0x51,
     opCodeCVVTSD2SI = 0x2C,
     opCodeBREAKPOINT = 0xCC,
+};*/
+
+enum opCode_t {
+    opCodeADD         = 0x01,
+    opCodeSUB         = 0x29,
+    opCodeCVTSI2SD    = 0x2A,
+    opCodeCVTTSD2SI   = 0x2C,
+    opCodeCMP         = 0x39,
+    opCodePUSH        = 0x50,
+    opCodeSQRTSD      = 0x51,
+    opCodePOP         = 0x58,
+    opCodeALU_R_IMM32 = 0x81,
+    opCodeALU_R_IMM8  = 0x83,
+    opCodeJZ          = 0x84,
+    opCodeTEST        = 0x85,
+    opCodeMOVcleanDir = 0x89,
+    opCodeMOVsetDir   = 0x8B,
+    opCodeNOP         = 0x90,
+    opCodeSETe        = 0x94,
+    opCodeSETne       = 0x95,
+    opCodeCQO         = 0x99,
+    opCodeSETl        = 0x9C,
+    opCodeSETge       = 0x9D,
+    opCodeSETle       = 0x9E,
+    opCodeSETg        = 0x9F,
+    opCodeIMUL        = 0xAF,
+    opCodeMOVZXrr8    = 0xB6,
+    opCodeMOVregConst = 0xB8,
+    opCodeRET         = 0xC3,
+    opCodeBREAKPOINT  = 0xCC,
+    opCodeCALL        = 0xE8,
+    opCodeJMP         = 0xE9,
+    opCodeIDIV        = 0xF7,
 };
 
 enum aluOpCode_t {
@@ -135,7 +165,7 @@ const uint8_t DOUBLE_PRECISION_PREFIX = 0xF2;
 const uint8_t REX_W_BYTE = 0x48;
 const uint8_t REX_B_BYTE = 0x41;
 
-const uint8_t XMM0_CODE = 0x00;
+const size_t IF_WHILE_LABEL_LEN = 32;
 
 const int IDIV_EXTRA_OPCODE = 0x07;
 const int NO_INDEX_REG = 0x04;
@@ -227,6 +257,51 @@ union varAddrComp_t {
 struct varPos_t {
     bool inReg;
     varAddrComp_t varrAddrComp;
+};
+
+const uint8_t XMM0_CODE = 0x00;
+
+enum xmmRegCode_t {
+    XMM0 = 0x00,
+    XMM1 = 0x01,
+    XMM2 = 0x02,
+    XMM3 = 0x03,
+    XMM4 = 0x04,
+    XMM5 = 0x05,
+    XMM6 = 0x06,
+    XMM7 = 0x07,
+    XMM8 = 0x08,
+    XMM9 = 0x09,
+    XMM10 = 0x0A,
+    XMM11 = 0x0B,
+    XMM12 = 0x0C,
+    XMM13 = 0x0D,
+    XMM14 = 0x0E,
+    XMM15 = 0x0F,
+};
+
+struct xmmReg_t {
+    xmmRegCode_t regCode;
+    const char* name;
+};
+
+const xmmReg_t xmmArr[] = {
+    { XMM0,  "xmm0"  },
+    { XMM1,  "xmm1"  },
+    { XMM2,  "xmm2"  },
+    { XMM3,  "xmm3"  },
+    { XMM4,  "xmm4"  },
+    { XMM5,  "xmm5"  },
+    { XMM6,  "xmm6"  },
+    { XMM7,  "xmm7"  },
+    { XMM8,  "xmm8"  },
+    { XMM9,  "xmm9"  },
+    { XMM10, "xmm10" },
+    { XMM11, "xmm11" },
+    { XMM12, "xmm12" },
+    { XMM13, "xmm13" },
+    { XMM14, "xmm14" },
+    { XMM15, "xmm15" }
 };
 
 #endif
