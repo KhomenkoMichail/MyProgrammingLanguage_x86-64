@@ -226,9 +226,7 @@ mov rsi, rax
 
 
 mov rax, rcx
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -283,9 +281,7 @@ mov r8, rbx
 
 
 mov rax, r8
-push rax
 mov rbx, 1
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -342,9 +338,7 @@ endif1:
 
 
 mov rax, rcx
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -364,9 +358,7 @@ jz endif3
 
 
 mov rax, rsi
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -436,9 +428,7 @@ mov r8, rbx
 
 
 mov rax, r8
-push rax
 mov rbx, 1
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -494,9 +484,7 @@ endif5:
 
 
 mov rax, r9
-push rax
 mov rbx, r10
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -533,9 +521,7 @@ endif4:
 
 
 mov rax, rsi
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -592,9 +578,7 @@ mov rdi, rbx
 
 
 mov rax, rdi
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setl al
 movzx rax, al
@@ -630,9 +614,7 @@ endif8:
 
 
 mov rax, rdi
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -667,15 +649,11 @@ mov r8, rbx
 
 
 mov rax, 0
-push rax
 mov rbx, rdx
-pop rax
 sub rax, rbx
 push rax
 mov rax, 2
-push rax
 mov rbx, rcx
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -700,9 +678,7 @@ endif9:
 
 
 mov rax, rdi
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setg al
 movzx rax, al
@@ -737,9 +713,7 @@ mov r8, rbx
 
 
 mov rax, 0
-push rax
 mov rbx, rdx
-pop rax
 sub rax, rbx
 push rax
 mov rax, rdi
@@ -750,9 +724,7 @@ pop rax
 sub rax, rbx
 push rax
 mov rax, 2
-push rax
 mov rbx, rcx
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -776,9 +748,7 @@ mov r9, rbx
 
 
 mov rax, 0
-push rax
 mov rbx, rdx
-pop rax
 sub rax, rbx
 push rax
 mov rax, rdi
@@ -789,9 +759,7 @@ pop rax
 add rax, rbx
 push rax
 mov rax, 2
-push rax
 mov rbx, rcx
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -847,9 +815,7 @@ pop rcx
 
 
 mov rax, r8
-push rax
 mov rbx, 1
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -899,9 +865,7 @@ endif11:
 
 
 mov rax, r8
-push rax
 mov rbx, 2
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -1010,19 +974,13 @@ mov rbp, rsp
 
 
 mov rax, [rbp + 24]
-push rax
 mov rbx, [rbp + 24]
-pop rax
 imul rax, rbx
 push rax
 mov rax, 4
-push rax
 mov rbx, [rbp + 16]
-pop rax
 imul rax, rbx
-push rax
 mov rbx, [rbp + 32]
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -1076,9 +1034,7 @@ mov rbp, rsp
 
 
 mov rax, [rbp + 16]
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -1098,9 +1054,7 @@ jz endif13
 
 
 mov rax, [rbp + 24]
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -1138,9 +1092,7 @@ endif14:
 
 
 mov rax, [rbp + 24]
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -1179,9 +1131,7 @@ endif13:
 
 
 mov rax, [rbp + 16]
-push rax
 mov rbx, 0
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -1252,13 +1202,9 @@ mov rbp, rsp
 
 
 mov rax, 0
-push rax
 mov rbx, [rbp + 24]
-pop rax
 sub rax, rbx
-push rax
 mov rbx, [rbp + 16]
-pop rax
 cqo
 idiv rbx
 mov rbx, rax

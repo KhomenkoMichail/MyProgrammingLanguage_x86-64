@@ -103,6 +103,9 @@ uint32_t* curScopePushedRegsMask (tree_t* tree) {
 
 void setNodeIsFuncBody (node_t* node) {
     assert(node);
+
+    *nodeType(node) = typeIdentifier;
+    node->value.id.idType = idFUNC;
     node->value.id.idInfo.funcInfo.isBodyNode = true;
 }
 

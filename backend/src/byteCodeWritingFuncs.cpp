@@ -91,11 +91,10 @@ int executeBuffer (backendContext_t* cntxt) {
     assert(cntxt);
 
     size_t pageSize = sysconf(_SC_PAGESIZE);
+    size_t offset = (uintptr_t)*cntxtProgramBuf(cntxt) % pageSize;
 
-    uintptr_t startAddr = (uintptr_t)(*cntxtProgramBuf(cntxt));
-    uintptr_t pageAlignedAddr = startAddr & ~(pageSize - 1);
+    uintptr_t pageAlignedAddr = (uintptr_t)*cntxtProgramBuf(cntxt) - offset;
 
-    size_t offset = startAddr - pageAlignedAddr;
     size_t protectSize = *cntxtProgramBufSize(cntxt) + offset;
 
     if (mprotect((void*)pageAlignedAddr, protectSize, PROT_READ | PROT_EXEC) == -1) {
@@ -175,14 +174,14 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
         case opCOMMA:
             return opCalcToByteCode(cntxt, node, resultReg);
 
-        case opASSIGN: return opAssignToByteCode(cntxt, node);
-        case opWHILE: return opWhileToByteCode(cntxt, node);
-        case opIF: return opIfToByteCode(cntxt, node);
-        case opIN: return opInToByteCode(cntxt, node);
+        case opASSIGN:  return opAssignToByteCode(cntxt, node);
+        case opWHILE:   return opWhileToByteCode(cntxt, node);
+        case opIF:      return opIfToByteCode(cntxt, node);
+        case opIN:      return opInToByteCode(cntxt, node);
         case opPUTCHAR: return opPutcharToByteCode(cntxt, node);
-        case opOUT: return opOutToByteCode(cntxt, node);
-        case opRET: return opRetToByteCode(cntxt, node);
-        case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
+        case opOUT:     return opOutToByteCode(cntxt, node);
+        case opRET:     return opRetToByteCode(cntxt, node);
+        case opSQRT:    return opSqrtToByteCode(cntxt, node, resultReg);
 
         case opHLT:
             CALL_("stdExit");
@@ -230,22 +229,25 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
                         __func__, __FILE__, __LINE__);
     }
 
-    if (isMath)
-        PUSHR_(RAX);
 
 
     if (*nodeRight(node)) {
+        if (isMath && *nodeLeft(*nodeRight(node)))
+            PUSHR_(RAX);
+
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
+
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
+
+
+        if (isMath && *nodeLeft(*nodeRight(node)))
+            POPR_(RAX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
                         "Error: calc node does not have RIGHT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-
-    if (isMath)
-        POPR_(RAX);
 
     switch (*nodeOpCode(node)) {
         case (opADD): ADD_RR_(RAX, RBX);  break;
@@ -264,7 +266,7 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
         default: break;
     }
 
-    if (resultReg == RBX && isMaths)
+    if (resultReg == RBX && isMath)
         MOV_RR_(RBX, RAX);
 
     return *cntxtErrCode(cntxt);
@@ -465,11 +467,15 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t result
                         __func__, __FILE__, __LINE__);
     }
 
-    PUSHR_(RAX);
-
     if (*nodeRight(node)) {
+        if (*nodeLeft(*nodeRight(node)))
+            PUSHR_(RAX);
+
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
+
+        if (*nodeLeft(*nodeRight(node)))
+            POPR_(RAX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
@@ -477,7 +483,6 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t result
                         __func__, __FILE__, __LINE__);
     }
 
-    POPR_(RAX);
     CMP_RR_(RAX, RBX);
 
     switch (*nodeOpCode(node)) {

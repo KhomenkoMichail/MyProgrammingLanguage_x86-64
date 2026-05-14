@@ -306,6 +306,7 @@ int rewriteOpNodeToShiriiwookLang (FILE* outputFile, tree_t* tree, node_t* node,
 
         case opIN:
         case opOUT:
+        case opPUTCHAR:
         case opRET:
         case opHLT:
         case opSQRT:
@@ -464,7 +465,7 @@ int rewritePrefixOpNodeToShiriiwookLang (FILE* outputFile, tree_t* tree, node_t*
 
     fprintf(outputFile, "%s ", OP_NAME_(curOp));
 
-    if ((curOp == opIN) || (curOp == opOUT))
+    if ((curOp == opIN) || (curOp == opOUT) || (curOp == opPUTCHAR))
         fprintf(outputFile, "%s", OP_NAME_(opQUOTES));
 
     if (curOp == opSQRT)
@@ -473,7 +474,7 @@ int rewritePrefixOpNodeToShiriiwookLang (FILE* outputFile, tree_t* tree, node_t*
     if (*nodeLeft(node))
         errorCode = rewriteNodeToShiriiwookLang (outputFile, tree, *nodeLeft(node), leftIndent);
 
-    if ((curOp == opIN) || (curOp == opOUT))
+    if ((curOp == opIN) || (curOp == opOUT) || (curOp == opPUTCHAR))
         fprintf(outputFile, "%s", OP_NAME_(opQUOTES));
 
     if (curOp == opSQRT)
@@ -496,40 +497,6 @@ int needBrackets(node_t* node) {
 }
 
 int getOperatorPriority(operatorCode_t opCode) {
-    /*switch (opCode) {
-        case opADD:
-        case opSUB:
-            return 1;
-        case opMUL:
-        case opDIV:
-            return 2;
-        case opSQRT:
-            return 3;
-        case opSEPARATOR:
-        case opBRACK_ON:
-        case opBRACK_OFF:
-        case opASSIGN:
-        case opWHILE:
-        case opIF:
-        case opIN:
-        case opOUT:
-        case opRET:
-        case opHLT:
-        case opSQRT:
-        case opCOMMA:
-        case opUNITED_ON:
-        case opUNITED_OFF:
-        case opQUOTES:
-        case opEQUAL:
-        case opABOVE:
-        case opBELOW:
-        case opNOT_EQUAL:
-        case opE_BELOW:
-        case opE_ABOVE:
-        case opINIT:
-        default:
-            return 0;
-    }*/
     if (opCode == opADD || opCode == opSUB)
         return 1;
     else if (opCode == opMUL || opCode == opDIV)

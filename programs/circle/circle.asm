@@ -94,9 +94,7 @@ mov rsi, rbx
 
 while1:
 mov rax, rsi
-push rax
 mov rbx, 100
-pop rax
 cmp rax, rbx
 setl al
 movzx rax, al
@@ -132,9 +130,7 @@ mov rdx, rbx
 
 while2:
 mov rax, rdx
-push rax
 mov rbx, 100
-pop rax
 cmp rax, rbx
 setl al
 movzx rax, al
@@ -180,37 +176,27 @@ jz endwhile2
 
 
 mov rax, rdx
-push rax
 mov rbx, 50
-pop rax
 sub rax, rbx
 push rax
 mov rax, rdx
-push rax
 mov rbx, 50
-pop rax
 sub rax, rbx
 mov rbx, rax
 pop rax
 imul rax, rbx
 push rax
 mov rax, rsi
-push rax
 mov rbx, 50
-pop rax
 sub rax, rbx
 push rax
 mov rax, rsi
-push rax
 mov rbx, 50
-pop rax
 sub rax, rbx
 mov rbx, rax
 pop rax
 imul rax, rbx
-push rax
 mov rbx, 4
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -233,9 +219,7 @@ mov rdi, rbx
 mov rax, rdi
 push rax
 mov rax, rcx
-push rax
 mov rbx, rcx
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -284,9 +268,7 @@ endif1:
 mov rax, rdi
 push rax
 mov rax, rcx
-push rax
 mov rbx, rcx
-pop rax
 imul rax, rbx
 mov rbx, rax
 pop rax
@@ -333,9 +315,7 @@ endif2:
 
 
 mov rax, rdx
-push rax
 mov rbx, 1
-pop rax
 add rax, rbx
 mov rbx, rax
 mov rdx, rbx
@@ -378,9 +358,7 @@ pop rcx
 
 
 mov rax, rsi
-push rax
 mov rbx, 1
-pop rax
 add rax, rbx
 mov rbx, rax
 mov rsi, rbx

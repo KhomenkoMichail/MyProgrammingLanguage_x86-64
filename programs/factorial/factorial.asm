@@ -155,9 +155,7 @@ mov rbp, rsp
 
 
 mov rax, [rbp + 16]
-push rax
 mov rbx, 1
-pop rax
 cmp rax, rbx
 sete al
 movzx rax, al
@@ -195,9 +193,7 @@ endif1:
 
 
 mov rax, [rbp + 16]
-push rax
 mov rbx, 1
-pop rax
 cmp rax, rbx
 setne al
 movzx rax, al
@@ -218,9 +214,7 @@ jz endif2
 mov rax, [rbp + 16]
 push rax
 mov rax, [rbp + 16]
-push rax
 mov rbx, 1
-pop rax
 sub rax, rbx
 push rax
 call factorial

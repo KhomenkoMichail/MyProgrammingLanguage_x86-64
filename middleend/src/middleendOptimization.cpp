@@ -115,6 +115,7 @@ int solveNode (tree_t* tree, node_t* node) {
                 case opIF:
                 case opIN:
                 case opOUT:
+                case opPUTCHAR:
                 case opRET:
                 case opHLT:
                 case opCOMMA:
