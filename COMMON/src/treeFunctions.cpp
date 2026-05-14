@@ -114,33 +114,29 @@ int fprintfNodeLinksForGraph (node_t* node, FILE* graphFile, size_t* nodesPassed
     assert(node);
     assert(graphFile);
 
-    //(*nodesPassed) += 1;
-    //if (*nodesPassed > treeSize)
-    //    return tooManyRecursiveCalls;
-
     node_t** left = nodeLeft(node);
-    if((left != NULL) && (*left != NULL)) {                           //NOTE
+    if((left != NULL) && (*left != NULL)) {
         fprintf(graphFile, "    node0x%p:left -> node0x%p:addr [color = \"#666350ff\"];\n", node, *nodeLeft(node));
         fprintfNodeLinksForGraph(*nodeLeft(node), graphFile, nodesPassed, treeSize);
     }
 
-    if((left != NULL) && (*left != NULL)) {     //NOTE
+/*    if((left) && (*left)) {
         fprintf(graphFile, "    errorNode0x%p [label = \"ERROR!\\n 0x%p \", style = filled, fillcolor = \"#be3131ff\", color = black, fontcolor = white, shape = doubleoctagon];\n",
                 *left, *left);
         fprintf(graphFile, "    node0x%p:left -> errorNode0x%p [color = \"#f90d0dff\"];\n", node, *left);
-    }
+    }*/
 
     node_t** right = nodeRight(node);
-    if((right != NULL) && (*right != NULL)) {       //NOTE
+    if((right != NULL) && (*right != NULL)) {
         fprintf(graphFile, "    node0x%p:right -> node0x%p:addr [color = \"#666350ff\"];\n", node, *nodeRight(node));
         fprintfNodeLinksForGraph(*nodeRight(node), graphFile, nodesPassed, treeSize);
     }
 
-    if((right != NULL) && (*right != NULL)) {      //NOTE
+/*    if((right != NULL) && (*right != NULL)) {
         fprintf(graphFile, "    errorNode0x%p [label = \"ERROR!\\n 0x%p \", style = filled, fillcolor = \"#be3131ff\", color = black, fontcolor = white, shape = doubleoctagon];\n",
                 *right, *right);
         fprintf(graphFile, "    node0x%p:right -> errorNode0x%p [color = \"#f90d0dff\"];\n", node, *right);
-    }
+    }*/
 
     return 0;
 }

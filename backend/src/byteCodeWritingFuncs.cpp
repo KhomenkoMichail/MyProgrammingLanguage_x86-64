@@ -179,6 +179,7 @@ int opNodeToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
         case opWHILE: return opWhileToByteCode(cntxt, node);
         case opIF: return opIfToByteCode(cntxt, node);
         case opIN: return opInToByteCode(cntxt, node);
+        case opPUTCHAR: return opPutcharToByteCode(cntxt, node);
         case opOUT: return opOutToByteCode(cntxt, node);
         case opRET: return opRetToByteCode(cntxt, node);
         case opSQRT: return opSqrtToByteCode(cntxt, node, resultReg);
@@ -216,31 +217,35 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
     assert(node);
     assert(cntxt);
 
-    if (*nodeLeft(node))
-        nodeToByteCode (cntxt, *nodeLeft(node), RAX);
+    bool isMath = *nodeOpCode(node) != opSEPARATOR &&
+                  *nodeOpCode(node) != opCOMMA;
+
+    if (*nodeLeft(node)) {
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
+        if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
+    }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
                         "Error: calc node does not have LEFT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
 
-    if (*nodeRight(node)) {
-        if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
-                                        && (*nodeValue(node)).opCode != opCOMMA)
-            PUSHR_(RAX);
+    if (isMath)
+        PUSHR_(RAX);
 
+
+    if (*nodeRight(node)) {
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
-
-        if (*nodeLeft(*nodeRight(node)) && (*nodeValue(node)).opCode != opSEPARATOR
-                                        && (*nodeValue(node)).opCode != opCOMMA)
-            POPR_(RAX);
     }
     else {
         SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_RIGHT_NODE,
                         "Error: calc node does not have RIGHT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
+
+    if (isMath)
+        POPR_(RAX);
 
     switch (*nodeOpCode(node)) {
         case (opADD): ADD_RR_(RAX, RBX);  break;
@@ -259,7 +264,7 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
         default: break;
     }
 
-    if (resultReg == RBX)
+    if (resultReg == RBX && isMaths)
         MOV_RR_(RBX, RAX);
 
     return *cntxtErrCode(cntxt);
@@ -402,6 +407,27 @@ int opOutToByteCode (backendContext_t* cntxt, node_t* node) {
     return *cntxtErrCode(cntxt);
 }
 
+int opPutcharToByteCode(backendContext_t* cntxt, node_t* node) {
+    assert(cntxt);
+    assert(node);
+
+    if (*nodeLeft(node))
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
+    else {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                        "Error: putchar node does not have LEFT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+
+    uint32_t pushedRegsMask = pushSavedRegs(cntxt, callerSaved);
+
+    CALL_("stdPutchar");
+
+    popSavedRegs(cntxt, pushedRegsMask);
+
+    return *cntxtErrCode(cntxt);
+}
+
 int opRetToByteCode (backendContext_t* cntxt, node_t* node) {
     assert(cntxt);
     assert(node);
@@ -431,6 +457,16 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t result
     assert(cntxt);
     assert(node);
 
+    if (*nodeLeft(node))
+        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
+    else {
+        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
+                        "Error: compare node does not have LEFT in func %s, %s:%d\n",
+                        __func__, __FILE__, __LINE__);
+    }
+
+    PUSHR_(RAX);
+
     if (*nodeRight(node)) {
         nodeToByteCode(cntxt, *nodeRight(node), RBX);
         if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
@@ -441,14 +477,7 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t result
                         __func__, __FILE__, __LINE__);
     }
 
-    if (*nodeLeft(node))
-        nodeToByteCode(cntxt, *nodeLeft(node), RAX);
-    else {
-        SET_ERR_AND_RETURN(cntxt, BACKEND_ERR_NO_LEFT_NODE,
-                        "Error: compare node does not have LEFT in func %s, %s:%d\n",
-                        __func__, __FILE__, __LINE__);
-    }
-
+    POPR_(RAX);
     CMP_RR_(RAX, RBX);
 
     switch (*nodeOpCode(node)) {
@@ -691,6 +720,10 @@ int addStdLibInBuffer (backendContext_t* cntxt) {
     assert(cntxt);
 
     JMP_("main");
+    if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
+
+    addLabelAddressInCntxt(cntxt, "stdPutchar");
+    JMP_OFFSET_(STDPUTCHAR_OFFSET);
     if (*cntxtErrCode(cntxt)) return *cntxtErrCode(cntxt);
 
     addLabelAddressInCntxt(cntxt, "stdExit");

@@ -9,7 +9,7 @@ INT_MAX_LEN EQU 21
 
 section .text
 ;----------------------------------------------------------------------------------------------
-;Exit the program.
+; Exit the program.
 ;----------------------------------------------------------------------------------------------
 stdExit:
                         mov rax, 60
@@ -17,11 +17,11 @@ stdExit:
                         syscall
 
 ;----------------------------------------------------------------------------------------------
-;Outputs a number in decimal notation.
-;Entry: rax = output number
-;Exit:
-;Expected:
-;Destroyed: rax, rcx, rdx, rdi, rsi, r9, r11
+; Outputs a number in decimal notation.
+; Entry: rax = output number
+; Exit:
+; Expected:
+; Destroyed: rax, rcx, rdx, rdi, rsi, r9, r11
 ;----------------------------------------------------------------------------------------------
 stdOut:
                         push rbp
@@ -73,7 +73,7 @@ stdOut:
                         jnz .printNum
 
 .end:
-
+                        PUT_CHAR `\n`              ;;note
                         mov rax, 1                                 ; write
                         mov rdi, 1                                 ; stdout
 
@@ -86,11 +86,11 @@ stdOut:
                         ret
 
 ;----------------------------------------------------------------------------------------------
-;Assigns the decimal number read from stdin to the RAX register.
-;Entry:
-;Exit: rax = entered number
-;Expected:
-;Destroyed: rax, rcx, rdx, rdi, rsi, r8, r9
+; Assigns the decimal number read from stdin to the RAX register.
+; Entry:
+; Exit: rax = entered number
+; Expected:
+; Destroyed: rax, rcx, rdx, rdi, rsi, r8, r9
 ;----------------------------------------------------------------------------------------------
 stdIn:
                         push rbp
@@ -152,3 +152,22 @@ stdIn:
 .error:
                         xor rax, rax
                         jmp .exit
+
+;----------------------------------------------------------------------------------------------
+; Outputs one char
+; Entry: rax = char ASCII code
+; Exit:
+; Expected:
+; Destroyed: rax, rcx, rdx, rsi, rdi, r11
+;----------------------------------------------------------------------------------------------
+stdPutchar:
+                        push rax
+
+                        mov rax, 1          ; write
+                        mov rdi, 1          ; stdout
+                        mov rsi, rsp        ; rsi = char addr
+                        mov rdx, 1          ; numOfChars (1)
+                        syscall
+
+                        pop rax
+                        ret

@@ -69,6 +69,7 @@ enum operatorCode_t {
     opE_BELOW = 23,
     opE_ABOVE = 24,
     opINIT = 25,
+    opPUTCHAR = 26,
 };
 
 union nodeValue_t {

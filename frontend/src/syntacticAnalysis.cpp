@@ -183,10 +183,10 @@ node_t* getOperator (tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
                 return getOpIfOrWhile(tree, nodeArr, curNodeNum);
             case opWHILE:
                 return getOpIfOrWhile(tree, nodeArr, curNodeNum);
+            case opPUTCHAR:
             case opIN:
-                return getOpInOrOut(tree, nodeArr, curNodeNum);
             case opOUT:
-                return getOpInOrOut(tree, nodeArr, curNodeNum);
+                return getOpInOutPutchar(tree, nodeArr, curNodeNum);
             case opRET:
                 return getOpRet(tree, nodeArr, curNodeNum);
             case opUNITED_ON:
@@ -266,7 +266,7 @@ node_t* getOpIfOrWhile(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     return newNode;
 }
 
-node_t* getOpInOrOut(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
+node_t* getOpInOutPutchar(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
     assert(tree);
     assert(nodeArr);
     assert(curNodeNum);
@@ -279,7 +279,10 @@ node_t* getOpInOrOut(tree_t* tree, node_t** nodeArr, size_t* curNodeNum) {
 
     CHECK_THE_NODE_IS_(opQUOTES);
 
-    *nodeLeft(newNode) = getVarIDNode(tree, nodeArr, curNodeNum);
+    if (*nodeOpCode(newNode) == opIN || *nodeOpCode(newNode) == opOUT)
+        *nodeLeft(newNode) = getVarIDNode(tree, nodeArr, curNodeNum);
+    else
+        *nodeLeft(newNode) = getExpressionNode(tree, nodeArr, curNodeNum);
 
     if (!*nodeLeft(newNode))
         return NULL;

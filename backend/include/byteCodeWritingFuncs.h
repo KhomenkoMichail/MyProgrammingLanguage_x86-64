@@ -20,6 +20,8 @@ int opIfToByteCode (backendContext_t* cntxt, node_t* node);
 
 int opInToByteCode (backendContext_t* cntxt, node_t* node);
 
+int opPutcharToByteCode(backendContext_t* cntxt, node_t* node);
+
 int opOutToByteCode (backendContext_t* cntxt, node_t* node);
 
 int opRetToByteCode (backendContext_t* cntxt, node_t* node);

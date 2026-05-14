@@ -5,19 +5,27 @@ atti() chal
     wyaaaaaa x wuahh aohwawh!
     wyaaaaaa y wuahh aohwawh!
 
-    awa (y issh 100) {
-        x wuahh aohwawh;
-        awa (x issh 100) {
-            yaag (x muaarga x + y muaarga y issh r muaarga r)
-                draw 0;
-            yaag (x muaarga x + y muaarga y ~kerri~uma r muaarga r)
-                draw 1;
+    awa (y issh ah`aohwawh`aohwawh) chal
 
-            x wuahh x + 1;
-        }
-        draw '\n'
-        y wuahh y + 1;
-    }
+        x wuahh aohwawh!
+
+        awa (x issh ah`aohwawh`aohwawh) chal
+            wyaaaaaa pos wuahh (x muawa ah-wyoorg`aohwawh) muaarga (x muawa ah-wyoorg`aohwawh)
+                         bacca ((y muawa ah-wyoorg`aohwawh) muaarga (y muawa ah-wyoorg`aohwawh)  muaarga wyoorg)!
+
+            yaag (pos issh r muaarga r)
+                hrung "hu-yourg`wyoorg"!
+
+            yaag (pos ~kerri~uma r muaarga r)
+                hrung "wyoorg`hu-yourg"!
+
+            x wuahh x bacca ah!
+        ur-oh!
+
+        hrung "ah`aohwawh"!
+
+        y wuahh y bacca ah!
+    ur-oh!
 
     mu!
 ur-oh!

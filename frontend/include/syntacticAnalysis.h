@@ -11,7 +11,7 @@ node_t* getOperator (tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
 node_t* getOpIfOrWhile(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
-node_t* getOpInOrOut(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
+node_t* getOpInOutPutchar(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
 node_t* getOpRet(tree_t* tree, node_t** nodeArr, size_t* curNodeNum);
 
