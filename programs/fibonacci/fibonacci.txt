@@ -1,0 +1,19 @@
+wyaaaaaa fibonacci(n)!
+
+atti() chal
+    wyaaaaaa n wuahh aohwawh!
+    wyaaaaaa result wuahh  aohwawh!
+
+    haaag "n"!
+    result wuahh fibonacci(n)!
+
+    lanna "result"!
+    mu!
+ur-oh!
+
+fibonacci(n) chal
+    yaag (n ~issh~uma ah-ah)
+        ruow ah!
+    yaag (n ~kerri~uma a-oo-ah)
+        ruow (fibonacci(n muawa ah) bacca fibonacci(n muawa ah-ah))!
+ur-oh!

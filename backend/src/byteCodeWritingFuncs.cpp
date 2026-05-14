@@ -86,28 +86,6 @@ int writeElfFile(backendContext_t* cntxt) {
     return BACKEND_SUCCESS;
 }
 
-/*
-int executeBuffer (backendContext_t* cntxt) {
-    assert(cntxt);
-
-    size_t pageSize = sysconf(_SC_PAGESIZE);
-    size_t offset = (uintptr_t)*cntxtProgramBuf(cntxt) % pageSize;
-
-    uintptr_t pageAlignedAddr = (uintptr_t)*cntxtProgramBuf(cntxt) - offset;
-
-    size_t protectSize = *cntxtProgramBufSize(cntxt) + offset;
-
-    if (mprotect((void*)pageAlignedAddr, protectSize, PROT_READ | PROT_EXEC) == -1) {
-        perror("mprotect failed");
-        return -1;
-    }
-
-    bufFunc_t bufCode = (bufFunc_t)(*cntxtProgramBuf(cntxt));
-    int result = bufCode();
-
-    return result;
-}*/
-
 int astToAsmAndByteCode (backendContext_t* cntxt) {
     assert(cntxt);
 
@@ -228,8 +206,6 @@ int opCalcToByteCode (backendContext_t* cntxt, node_t* node, regCode_t resultReg
                         "Error: calc node does not have LEFT in func %s, %s:%d\n",
                         __func__, __FILE__, __LINE__);
     }
-
-
 
     if (*nodeRight(node)) {
         if (isMath && *nodeLeft(*nodeRight(node)))
@@ -490,7 +466,7 @@ int opCompareToByteCode (backendContext_t* cntxt, node_t* node, regCode_t result
         case opNOT_EQUAL: SETNE_(RAX); break;
         case opBELOW:     SETL_(RAX);  break;
         case opABOVE:     SETG_(RAX);  break;
-        case opE_BELOW:   SETE_(RAX);  break;
+        case opE_BELOW:   SETLE_(RAX);  break;
         case opE_ABOVE:   SETGE_(RAX); break;
         default:
             break;

@@ -261,7 +261,7 @@ int emitMov (backendContext_t* cntxt, modARGS_t modARGS, regCode_t destReg, regC
         return *cntxtErrCode(cntxt);
     }
 
-    uint8_t mod = (!disp && (baseReg & 7) != RBP) ? MEM_NO_OFFSET: MEM_8_OFFSET;
+    uint8_t mod = (disp == NO_DISP) ? MEM_NO_OFFSET: MEM_8_OFFSET;
     if (disp < -128 || disp > 127)
         mod = MEM_32_OFFSET;
 
@@ -314,7 +314,7 @@ int emitSETcc (backendContext_t* cntxt, opCode_t opCode, regCode_t destReg) {
     assert(cntxt);
 
     switch (opCode) {
-        case opCodeSETe:  fprintf(*cntxtAsmFile(cntxt), "sete %s\n", regLowByteName(cntxt, destReg));         break;
+        case opCodeSETe:  fprintf(*cntxtAsmFile(cntxt), "sete %s\n", regLowByteName(cntxt, destReg));  break;
         case opCodeSETne: fprintf(*cntxtAsmFile(cntxt), "setne %s\n", regLowByteName(cntxt, destReg)); break;
         case opCodeSETl:  fprintf(*cntxtAsmFile(cntxt), "setl %s\n", regLowByteName(cntxt, destReg));  break;
         case opCodeSETg:  fprintf(*cntxtAsmFile(cntxt), "setg %s\n", regLowByteName(cntxt, destReg));  break;

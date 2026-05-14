@@ -11,9 +11,9 @@ front_cpp = frontend/src/main.cpp frontend/src/lexicalAnalysis.cpp frontend/src/
 front_all = frontend/include/DSL.h frontend/include/lexicalAnalysis.h frontend/include/syntacticAnalysis.h
 
 
-back_cpp = backend/src/backendMain.cpp backend/src/asmProgramWriter.cpp backend/src/sourceFileParser.cpp backend/src/backendCntxtFuncs.cpp backend/src/structAccessFunctions.cpp backend/src/byteCodeWritingFuncs.cpp backend/src/instructionsEncoding.cpp
+back_cpp = backend/src/backendMain.cpp backend/src/sourceFileParser.cpp backend/src/backendCntxtFuncs.cpp backend/src/structAccessFunctions.cpp backend/src/byteCodeWritingFuncs.cpp backend/src/instructionsEncoding.cpp
 
-back_all = backend/include/asmProgramWriter.h backend/include/backendConsts.h backend/include/sourceFileParser.h backend/include/backendCntxtFuncs.h backend/include/backendConsts.h backend/include/byteCodeWritingFuncs.h backend/include/instructionsEncoding.h backend/include/stdlibHex.h
+back_all = backend/include/backendConsts.h backend/include/sourceFileParser.h backend/include/backendCntxtFuncs.h backend/include/backendConsts.h backend/include/byteCodeWritingFuncs.h backend/include/instructionsEncoding.h backend/include/stdlibHex.h
 
 
 middle_cpp = middleend/src/middleEndMain.cpp middleend/src/middleendOptimization.cpp
